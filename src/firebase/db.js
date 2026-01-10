@@ -13,7 +13,34 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from './config';
 
-const COLLECTION_NAME = 'pachislo_records';
+/**
+ * メールアドレスからローカルパート（@前の部分）を抽出
+ * @param {string} email - メールアドレス
+ * @returns {string} ローカルパート
+ */
+const getEmailLocalPart = (email) => {
+  return email.split('@')[0];
+};
+
+/**
+ * 現在のユーザーの識別子を取得（メールのローカルパート）
+ * @returns {string} ユーザー識別子
+ */
+const getCurrentUserIdentifier = () => {
+  if (!auth.currentUser) {
+    throw new Error('User not authenticated');
+  }
+  return getEmailLocalPart(auth.currentUser.email);
+};
+
+/**
+ * ユーザーごとのサブコレクションパスを取得
+ * @param {string} userIdentifier - ユーザー識別子（メールのローカルパート）
+ * @returns {string} サブコレクションパス
+ */
+const getUserRecordsCollection = (userIdentifier) => {
+  return collection(db, 'users', userIdentifier, 'records');
+};
 
 /**
  * ユーザーの記録をリアルタイムで取得（リスナー設定）
@@ -26,9 +53,9 @@ export const subscribeToRecords = (callback) => {
     return () => {};
   }
 
+  const userIdentifier = getCurrentUserIdentifier();
   const q = query(
-    collection(db, COLLECTION_NAME),
-    where('userId', '==', auth.currentUser.uid),
+    getUserRecordsCollection(userIdentifier),
     orderBy('date', 'desc')
   );
 
@@ -38,6 +65,8 @@ export const subscribeToRecords = (callback) => {
       ...doc.data()
     }));
     callback(records);
+  }, (error) => {
+    console.error('❌ Firestore query error:', error.code, error.message);
   });
 
   return unsubscribe;
@@ -53,9 +82,9 @@ export const createRecord = async (recordData) => {
     throw new Error('User not authenticated');
   }
 
-  const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+  const userIdentifier = getCurrentUserIdentifier();
+  const docRef = await addDoc(getUserRecordsCollection(userIdentifier), {
     ...recordData,
-    userId: auth.currentUser.uid,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
   });
@@ -73,7 +102,8 @@ export const updateRecord = async (recordId, recordData) => {
     throw new Error('User not authenticated');
   }
 
-  const recordRef = doc(db, COLLECTION_NAME, recordId);
+  const userIdentifier = getCurrentUserIdentifier();
+  const recordRef = doc(db, 'users', userIdentifier, 'records', recordId);
   await updateDoc(recordRef, {
     ...recordData,
     updatedAt: serverTimestamp()
@@ -89,7 +119,8 @@ export const deleteRecord = async (recordId) => {
     throw new Error('User not authenticated');
   }
 
-  await deleteDoc(doc(db, COLLECTION_NAME, recordId));
+  const userIdentifier = getCurrentUserIdentifier();
+  await deleteDoc(doc(db, 'users', userIdentifier, 'records', recordId));
 };
 
 /**
