@@ -598,7 +598,7 @@ const App = () => {
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8">
               <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                 <h2 className="text-lg font-black text-slate-800 flex items-center gap-2"><PlusCircle className="text-indigo-600"/> 新規実践記録</h2>
-                <button onClick={() => setShowForm(false)} className="p-2 text-slate-400 hover:text-slate-600"><X/></button>
+                <button onClick={cancelEdit} className="p-2 text-slate-400 hover:text-slate-600"><X/></button>
               </div>
               <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto text-left">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -877,7 +877,7 @@ const InvestmentRecoverySection = ({ formData, handleInputChange }) => (
         {[
           { value: '20', label: '20スロ' },
           { value: '10', label: '10スロ' },
-          { value: '5', label: '5風呂' }
+          { value: '5', label: '5スロ' }
         ].map(rate => (
           <button
             key={rate.value}
