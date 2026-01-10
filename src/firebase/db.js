@@ -14,11 +14,27 @@ import {
 import { db, auth } from './config';
 
 /**
+ * ユーザーのメールアドレスを取得（providerData から確実に取得）
+ * @returns {string|null} メールアドレス
+ */
+const getUserEmail = () => {
+  const user = auth.currentUser;
+  if (!user) return null;
+  
+  // 優先順位: user.email → providerData から Google プロバイダ → null
+  if (user.email) return user.email;
+  
+  const googleProvider = user.providerData.find(p => p.providerId === 'google.com');
+  return googleProvider?.email || null;
+};
+
+/**
  * メールアドレスからローカルパート（@前の部分）を抽出
  * @param {string} email - メールアドレス
  * @returns {string} ローカルパート
  */
 const getEmailLocalPart = (email) => {
+  if (!email) return null;
   return email.split('@')[0];
 };
 
@@ -30,7 +46,11 @@ const getCurrentUserIdentifier = () => {
   if (!auth.currentUser) {
     throw new Error('User not authenticated');
   }
-  return getEmailLocalPart(auth.currentUser.email);
+  const email = getUserEmail();
+  if (!email) {
+    throw new Error('User email not available');
+  }
+  return getEmailLocalPart(email);
 };
 
 /**

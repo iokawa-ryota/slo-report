@@ -28,6 +28,16 @@ export const loginAnonymously = async () => {
  */
 export const subscribeToAuthState = (callback) => {
   return onAuthStateChanged(auth, (user) => {
+    if (user) {
+      console.log('✅ User authenticated:', {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        providerData: user.providerData
+      });
+    } else {
+      console.log('❌ User not authenticated');
+    }
     callback(user);
   });
 };

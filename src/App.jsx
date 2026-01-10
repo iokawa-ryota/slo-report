@@ -67,14 +67,19 @@ const App = () => {
     return unsubscribe;
   }, [hasMigratedData]);
 
-  // Firebase からのレコード購読
+  // Firebase からのレコード購読（Googleサインイン済みユーザーのみ）
   useEffect(() => {
-    if (user) {
+    if (user && user.email) {
+      // Googleサインイン済み（email が存在する）のみ購読
       const unsubscribe = subscribeToRecords(setRecords);
       return unsubscribe;
+    } else if (user && !user.email) {
+      // 匿名ユーザーの場合は購読しない
+      setRecords([]);
     }
   }, [user]);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [previousTab, setPreviousTab] = useState('dashboard');
   const [selectedMachineTab, setSelectedMachineTab] = useState(MACHINE_OPTIONS[0]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -309,6 +314,7 @@ const App = () => {
   };
 
   const loadRecordForEdit = (index) => {
+    setPreviousTab(activeTab);
     setFormData(records[index]);
     setEditingIndex(index);
     setShowForm(true);
@@ -318,6 +324,7 @@ const App = () => {
   const cancelEdit = () => {
     setEditingIndex(null);
     setShowForm(false);
+    setActiveTab(previousTab);
     setFormData(prev => ({
       ...prev, 
       totalGames: '', bigCount: '', regCount: '', investment: '', recovery: '', 
