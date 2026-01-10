@@ -429,11 +429,7 @@ const App = () => {
                     <TechDetailSection formData={formData} handleInputChange={handleInputChange} />
                   )}
 
-                  <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100 grid grid-cols-3 gap-2">
-                    <InputPlain label={`${currentConfig.watermelonName}零し`} name="watermelonLossCount" value={formData.watermelonLossCount} onChange={handleInputChange} color="text-rose-400" />
-                    <InputPlain label={`${currentConfig.cherryName}欠損`} name="cherryLossCount" value={formData.cherryLossCount} onChange={handleInputChange} color="text-rose-400" />
-                    <InputPlain label="他損失(枚)" name="otherLossCount" value={formData.otherLossCount} onChange={handleInputChange} color="text-rose-400" />
-                  </div>
+                  <SmallRoleLossSection currentConfig={currentConfig} formData={formData} handleInputChange={handleInputChange} />
                   
                   <div className="text-center">
                     <div className="text-[10px] font-black text-slate-400 uppercase mb-1">今回の合計損失</div>
@@ -579,6 +575,14 @@ const TechDetailSection = ({ formData, handleInputChange }) => (
         </div>
       </div>
     </div>
+  </div>
+);
+
+const SmallRoleLossSection = ({ currentConfig, formData, handleInputChange }) => (
+  <div id="small-role-loss-section" className="bg-rose-50 p-4 rounded-2xl border border-rose-100 grid grid-cols-3 gap-2">
+    <InputPlain label={`${currentConfig.watermelonName}零し`} name="watermelonLossCount" value={formData.watermelonLossCount} onChange={handleInputChange} color="text-rose-400" />
+    <InputPlain label={`${currentConfig.cherryName}欠損`} name="cherryLossCount" value={formData.cherryLossCount} onChange={handleInputChange} color="text-rose-400" />
+    <InputPlain label="他損失(枚)" name="otherLossCount" value={formData.otherLossCount} onChange={handleInputChange} color="text-rose-400" />
   </div>
 );
 
