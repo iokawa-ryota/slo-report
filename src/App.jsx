@@ -254,6 +254,11 @@ const App = () => {
     const eRate = Number(formData.exchangeRate);
     const invYen = formData.investmentUnit === '円' ? Number(formData.investment) : Number(formData.investment) * lRate;
     const recYen = formData.recoveryUnit === '円' ? Number(formData.recovery) : Math.floor(Number(formData.recovery) * ((lRate * 50) / eRate));
+    const machineSection = (name => {
+      if (name === 'バーサスリヴァイズ') return 'versusRevise';
+      if (name === '新ハナビ') return 'hanabi';
+      return 'other';
+    })(formData.machineName);
     
     const recordData = {
       date: formData.date,
@@ -285,7 +290,30 @@ const App = () => {
       totalLoss: calculatedLoss.total,
       totalMisses: calculatedLoss.misses,
       stats: inputStats,
-      calcMode: calcMode
+      calcMode: calcMode,
+      // Grouped fields for easier per-record management
+      tech: {
+        mode: calcMode,
+        machineSection,
+        simple: {
+          attempts: Number(formData.techAttemptCount || 0),
+          misses: Number(formData.techMissCount || 0)
+        },
+        detail: {
+          midSuccess: Number(formData.midSuccess || 0),
+          midNotWatermelon: Number(formData.midNotWatermelon || 0),
+          midMiss: Number(formData.midMiss || 0),
+          rightSuccess: Number(formData.rightSuccess || 0),
+          rightMiss: Number(formData.rightMiss || 0)
+        },
+        accuracy: inputStats.personal.techAccuracy || null
+      },
+      losses: {
+        watermelon: Number(formData.watermelonLossCount || 0),
+        cherry: Number(formData.cherryLossCount || 0),
+        other: Number(formData.otherLossCount || 0),
+        total: calculatedLoss.total
+      }
     };
 
     try {
@@ -622,6 +650,19 @@ const App = () => {
 
                 <InvestmentRecoverySection formData={formData} handleInputChange={handleInputChange} />
 
+                <div id="memo-section" className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-700">メモ</label>
+                  <textarea
+                    id="memo"
+                    name="memo"
+                    value={formData.memo || ''}
+                    onChange={handleInputChange}
+                    placeholder="記録に関するメモがあれば入力してください"
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                    rows="3"
+                  />
+                </div>
+
                 <div className="space-y-4">
                   <div className="flex justify-between items-center border-b pb-2">
                     <div className="flex items-center gap-2">
@@ -818,7 +859,7 @@ const TechDetailSection_Hanabi = ({ formData, handleInputChange }) => (
       <div className="space-y-3">
         <label className="text-[10px] font-black text-indigo-600 uppercase border-b border-indigo-100 block pb-1">中リール第1停止</label>
         <div id="mid-inputs" className="grid grid-cols-3 gap-2">
-          <InputPlain label="成功(15枚)" name="midSuccess" placeholder="成功" value={formData.midSuccess} onChange={handleInputChange} />
+          <InputPlain label="氷揃い(15枚)" name="midSuccess" placeholder="成功" value={formData.midSuccess} onChange={handleInputChange} />
           <InputPlain label="救済(15枚)" name="midNotWatermelon" placeholder="救済" value={formData.midNotWatermelon} onChange={handleInputChange} color="text-indigo-400" />
           <InputPlain label="失敗(4枚)" name="midMiss" placeholder="失敗" value={formData.midMiss} onChange={handleInputChange} color="text-rose-500" />
         </div>
