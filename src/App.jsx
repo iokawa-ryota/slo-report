@@ -12,7 +12,9 @@ import {
   Menu,
   X,
   Layers,
-  Calendar
+  Calendar,
+  LogOut,
+  Loader
 } from 'lucide-react';
 import {
   LineChart,
@@ -27,24 +29,61 @@ import {
   ReferenceLine
 } from 'recharts';
 import { MACHINE_CONFIG, MACHINE_OPTIONS } from './config/machineConfig';
+import { subscribeToRecords, createRecord, updateRecord, deleteRecord as deleteRecordFromDb, migrateFromLocalStorage } from './firebase/db';
+import { loginAnonymously, subscribeToAuthState, logout, getCurrentUser, signInWithGoogle } from './firebase/auth';
 
 const App = () => {
-  const [records, setRecords] = useState(() => {
-    const saved = localStorage.getItem('pachislo-records-v8');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [records, setRecords] = useState([]);
+  const [hasMigratedData, setHasMigratedData] = useState(false);
 
+  // Firebase 認証の初期化
   useEffect(() => {
-    localStorage.setItem('pachislo-records-v8', JSON.stringify(records));
-  }, [records]);
+    const unsubscribe = subscribeToAuthState(async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        // ローカルストレージからのデータ移行をチェック
+        const localData = localStorage.getItem('pachislo-records-v8');
+        if (localData && !hasMigratedData) {
+          try {
+            const records = JSON.parse(localData);
+            if (records.length > 0) {
+              await migrateFromLocalStorage(records);
+              localStorage.removeItem('pachislo-records-v8');
+              setHasMigratedData(true);
+            }
+          } catch (error) {
+            console.error('Migration error:', error);
+          }
+        }
+      } else {
+        // ユーザーがログインしていない場合はログアウト状態を保つ
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
 
+    return unsubscribe;
+  }, [hasMigratedData]);
+
+  // Firebase からのレコード購読
+  useEffect(() => {
+    if (user) {
+      const unsubscribe = subscribeToRecords(setRecords);
+      return unsubscribe;
+    }
+  }, [user]);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedMachineTab, setSelectedMachineTab] = useState(MACHINE_OPTIONS[0]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [calcMode, setCalcMode] = useState('detail'); 
   const [isMidStart, setIsMidStart] = useState(false); 
-  const [lossChartType, setLossChartType] = useState('bar'); 
+  const [lossChartType, setLossChartType] = useState('bar');
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [dateRangeStart, setDateRangeStart] = useState('');
+  const [dateRangeEnd, setDateRangeEnd] = useState(''); 
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -101,10 +140,18 @@ const App = () => {
     });
   };
 
-  const dashboardChartData = useMemo(() => getChartDataForRecords(records), [records]);
+  const dashboardChartData = useMemo(() => getChartDataForRecords(filterRecordsByDateRange(records)), [records, dateRangeStart, dateRangeEnd]);
   
   const machineSpecificData = useMemo(() => {
-    const filtered = records.filter(r => r.machineName === selectedMachineTab);
+    const allMachineRecords = records.filter(r => r.machineName === selectedMachineTab);
+    const filtered = filterRecordsByDateRange(allMachineRecords);
+    const techAccuracyValues = filtered
+      .map(r => r.stats?.personal?.techAccuracy)
+      .filter(v => v !== undefined && v !== null);
+    const avgTechAccuracy = techAccuracyValues.length > 0
+      ? Math.round(techAccuracyValues.reduce((a, b) => a + b, 0) / techAccuracyValues.length)
+      : 0;
+
     return {
       records: filtered,
       chart: getChartDataForRecords(filtered),
@@ -114,16 +161,28 @@ const App = () => {
         games: filtered.reduce((acc, r) => acc + (r.stats?.personal?.games || 0), 0),
         big: filtered.reduce((acc, r) => acc + (r.stats?.personal?.big || 0), 0),
         reg: filtered.reduce((acc, r) => acc + (r.stats?.personal?.reg || 0), 0),
+        techAccuracy: avgTechAccuracy,
       }
     };
-  }, [records, selectedMachineTab]);
+  }, [records, selectedMachineTab, dateRangeStart, dateRangeEnd]);
+
+  function filterRecordsByDateRange(targetRecords) {
+    if (!dateRangeStart && !dateRangeEnd) return targetRecords;
+    return targetRecords.filter(r => {
+      const recordDate = r.date;
+      const isAfterStart = !dateRangeStart || recordDate >= dateRangeStart;
+      const isBeforeEnd = !dateRangeEnd || recordDate <= dateRangeEnd;
+      return isAfterStart && isBeforeEnd;
+    });
+  }
 
   const totalStats = useMemo(() => {
-    const yen = records.reduce((acc, r) => acc + r.profitYen, 0);
-    const loss = records.reduce((acc, r) => acc + (r.totalLoss || 0), 0);
-    const games = records.reduce((acc, r) => acc + (r.stats?.personal?.games || 0), 0);
+    const filteredRecords = filterRecordsByDateRange(records);
+    const yen = filteredRecords.reduce((acc, r) => acc + r.profitYen, 0);
+    const loss = filteredRecords.reduce((acc, r) => acc + (r.totalLoss || 0), 0);
+    const games = filteredRecords.reduce((acc, r) => acc + (r.stats?.personal?.games || 0), 0);
     return { yen, loss, games };
-  }, [records]);
+  }, [records, dateRangeStart, dateRangeEnd]);
 
   const inputStats = useMemo(() => {
     const g_end = Number(formData.totalGames) || 0;
@@ -184,16 +243,39 @@ const App = () => {
     };
   }, [formData, currentConfig, calcMode]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const lRate = Number(formData.lendingRate);
     const eRate = Number(formData.exchangeRate);
     const invYen = formData.investmentUnit === '円' ? Number(formData.investment) : Number(formData.investment) * lRate;
     const recYen = formData.recoveryUnit === '円' ? Number(formData.recovery) : Math.floor(Number(formData.recovery) * ((lRate * 50) / eRate));
     
-    const newRecord = {
-      ...formData,
-      id: Date.now(),
+    const recordData = {
+      date: formData.date,
+      machineName: formData.machineName,
+      totalGames: formData.totalGames,
+      bigCount: formData.bigCount,
+      regCount: formData.regCount,
+      startTotalGames: formData.startTotalGames,
+      startBigCount: formData.startBigCount,
+      startRegCount: formData.startRegCount,
+      investment: formData.investment,
+      investmentUnit: formData.investmentUnit,
+      recovery: formData.recovery,
+      recoveryUnit: formData.recoveryUnit,
+      lendingRate: formData.lendingRate,
+      exchangeRate: formData.exchangeRate,
+      techMissCount: formData.techMissCount,
+      techAttemptCount: formData.techAttemptCount,
+      midSuccess: formData.midSuccess,
+      midNotWatermelon: formData.midNotWatermelon,
+      midMiss: formData.midMiss,
+      rightSuccess: formData.rightSuccess,
+      rightMiss: formData.rightMiss,
+      watermelonLossCount: formData.watermelonLossCount,
+      cherryLossCount: formData.cherryLossCount,
+      otherLossCount: formData.otherLossCount,
+      memo: formData.memo,
       profitYen: recYen - invYen,
       totalLoss: calculatedLoss.total,
       totalMisses: calculatedLoss.misses,
@@ -201,7 +283,40 @@ const App = () => {
       calcMode: calcMode
     };
 
-    setRecords([newRecord, ...records]);
+    try {
+      if (editingIndex !== null) {
+        // 編集モード - Firebase を更新
+        const recordToUpdate = records[editingIndex];
+        await updateRecord(recordToUpdate.id, recordData);
+      } else {
+        // 新規作成モード - Firebase に追加
+        await createRecord(recordData);
+      }
+      
+      setEditingIndex(null);
+      setShowForm(false);
+      setFormData(prev => ({
+        ...prev, 
+        totalGames: '', bigCount: '', regCount: '', investment: '', recovery: '', 
+        techMissCount: '', techAttemptCount: '', 
+        midSuccess: '', midNotWatermelon: '', midMiss: '', rightSuccess: '', rightMiss: '',
+        watermelonLossCount: '0', cherryLossCount: '0', otherLossCount: '0'
+      }));
+    } catch (error) {
+      console.error('Error saving record:', error);
+      alert('レコードの保存に失敗しました');
+    }
+  };
+
+  const loadRecordForEdit = (index) => {
+    setFormData(records[index]);
+    setEditingIndex(index);
+    setShowForm(true);
+    setActiveTab('form');
+  };
+
+  const cancelEdit = () => {
+    setEditingIndex(null);
     setShowForm(false);
     setFormData(prev => ({
       ...prev, 
@@ -212,8 +327,15 @@ const App = () => {
     }));
   };
 
-  const deleteRecord = (id) => {
-    if (window.confirm('削除しますか？')) setRecords(records.filter(r => r.id !== id));
+  const deleteRecord = async (id) => {
+    if (window.confirm('削除しますか？')) {
+      try {
+        await deleteRecordFromDb(id);
+      } catch (error) {
+        console.error('Error deleting record:', error);
+        alert('レコードの削除に失敗しました');
+      }
+    }
   };
 
   const ChartSection = ({ data, lossType, setLossType }) => (
@@ -275,6 +397,52 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 relative">
+      {isLoading && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 shadow-xl">
+            <div className="flex items-center justify-center gap-3">
+              <Loader size={24} className="text-indigo-600 animate-spin" />
+              <span className="text-slate-700 font-semibold">初期化中...</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isLoading && !user && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm">
+            <div className="mb-6">
+              <div className="inline-block bg-indigo-100 p-4 rounded-full mb-4">
+                <Target className="text-indigo-600" size={32} />
+              </div>
+              <h2 className="text-xl font-black text-slate-800 mb-2">VERSUS ANALYZER</h2>
+              <p className="text-sm text-slate-600">マルチデバイス同期</p>
+            </div>
+            
+            <div className="space-y-3">
+              <button
+                onClick={() => signInWithGoogle()}
+                className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                <span>🔵</span>
+                Google でサインイン
+              </button>
+              
+              <button
+                onClick={() => loginAnonymously()}
+                className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold transition-colors text-sm"
+              >
+                匿名で続行（同期なし）
+              </button>
+            </div>
+            
+            <p className="text-xs text-slate-500 mt-4">
+              複数デバイスでデータを共有するには Google アカウントでサインインしてください
+            </p>
+          </div>
+        </div>
+      )}
+
       {isSidebarOpen && (
         <div 
           onClick={() => setIsSidebarOpen(false)} 
@@ -315,8 +483,17 @@ const App = () => {
             <NavItem icon={<History size={18}/>} label="全履歴一覧" active={activeTab === 'history'} onClick={() => {setActiveTab('history'); setIsSidebarOpen(false);}} />
           </nav>
 
-          <div className="pt-6 border-t border-slate-800 text-[10px] text-slate-500 font-bold text-center">
-            v9.0.0 - Vite + React
+          <div className="pt-6 border-t border-slate-800 space-y-3">
+            <div className="text-[10px] text-slate-500 font-bold text-center pb-3">
+              v9.0.0 - Firebase Sync
+            </div>
+            <button
+              onClick={() => logout()}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-slate-300 text-xs font-semibold"
+            >
+              <LogOut size={14} />
+              ログアウト
+            </button>
           </div>
         </div>
       </aside>
@@ -342,6 +519,40 @@ const App = () => {
         </header>
 
         <div className="p-6 md:p-8 max-w-6xl mx-auto w-full">
+          <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <div className="text-[10px] font-black text-slate-500 uppercase mb-3">期間フィルター</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[9px] font-bold text-slate-600 block mb-1">開始日</label>
+                <input 
+                  type="date" 
+                  value={dateRangeStart}
+                  onChange={(e) => setDateRangeStart(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[11px] font-semibold"
+                />
+              </div>
+              <div>
+                <label className="text-[9px] font-bold text-slate-600 block mb-1">終了日</label>
+                <input 
+                  type="date" 
+                  value={dateRangeEnd}
+                  onChange={(e) => setDateRangeEnd(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[11px] font-semibold"
+                />
+              </div>
+              {(dateRangeStart || dateRangeEnd) && (
+                <div className="col-span-2">
+                  <button 
+                    onClick={() => {setDateRangeStart(''); setDateRangeEnd('');}}
+                    className="w-full px-3 py-2 bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold hover:bg-slate-300 transition-all"
+                  >
+                    フィルターをリセット
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           {activeTab === 'dashboard' && (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -350,16 +561,18 @@ const App = () => {
                 <StatCard title="全機種 総回転数" value={`${totalStats.games.toLocaleString()} G`} color="text-slate-600" />
               </div>
               <ChartSection data={dashboardChartData} lossType={lossChartType} setLossType={setLossChartType} />
+              <RecentHistorySection records={filterRecordsByDateRange(records)} onEdit={loadRecordForEdit} />
             </>
           )}
 
           {activeTab === 'machine-stats' && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                 <StatCard title="機種別収支" value={`${machineSpecificData.stats.yen.toLocaleString()}円`} color={machineSpecificData.stats.yen >= 0 ? "text-emerald-600" : "text-rose-600"} />
                 <StatCard title="技術欠損" value={`-${machineSpecificData.stats.loss.toLocaleString()}枚`} color="text-rose-500" />
                 <StatCard title="BIG回数" value={`${machineSpecificData.stats.big}回`} color="text-indigo-600" />
                 <StatCard title="REG回数" value={`${machineSpecificData.stats.reg}回`} color="text-indigo-400" />
+                <StatCard title="技術精度" value={`${machineSpecificData.stats.techAccuracy}%`} color="text-amber-600" />
               </div>
               {machineSpecificData.chart.length > 0 ? (
                 <ChartSection data={machineSpecificData.chart} lossType={lossChartType} setLossType={setLossChartType} />
@@ -372,9 +585,10 @@ const App = () => {
           {(activeTab === 'history' || (activeTab === 'machine-stats' && machineSpecificData.records.length > 0)) && (
             <div className="space-y-4 mt-4 text-left">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{activeTab === 'history' ? '全履歴' : `${selectedMachineTab} の履歴`}</h3>
-              {(activeTab === 'history' ? records : machineSpecificData.records).map(r => (
-                <RecordItem key={r.id} record={r} onDelete={deleteRecord} />
-              ))}
+              {(activeTab === 'history' ? filterRecordsByDateRange(records) : machineSpecificData.records).map((r, idx) => {
+                const actualIndex = records.indexOf(r);
+                return <RecordItem key={r.id} record={r} recordIndex={actualIndex} onDelete={deleteRecord} onEdit={loadRecordForEdit} />;
+              })}
             </div>
           )}
         </div>
@@ -438,7 +652,16 @@ const App = () => {
                   </div>
                 </div>
 
-                <button type="submit" className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all uppercase tracking-widest text-sm">記録を保存する</button>
+                <div className="flex gap-3">
+                  <button type="submit" className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all uppercase tracking-widest text-sm">
+                    {editingIndex !== null ? '修正を保存' : '記録を保存する'}
+                  </button>
+                  {editingIndex !== null && (
+                    <button type="button" onClick={cancelEdit} className="px-6 py-4 bg-slate-200 text-slate-700 rounded-2xl font-black hover:bg-slate-300 transition-all text-sm">
+                      キャンセル
+                    </button>
+                  )}
+                </div>
               </form>
             </div>
           </div>
@@ -470,7 +693,7 @@ const StatCard = ({ title, value, color, className = "" }) => (
   </div>
 );
 
-const RecordItem = ({ record, onDelete }) => (
+const RecordItem = ({ record, recordIndex, onDelete, onEdit }) => (
   <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 group hover:border-indigo-200 transition-all text-left">
     <div className="flex justify-between items-start mb-3">
       <div className="flex items-center gap-3">
@@ -489,7 +712,10 @@ const RecordItem = ({ record, onDelete }) => (
           <div className="text-[9px] font-bold text-slate-400 flex items-center gap-1"><Calendar size={10}/> {record.date}</div>
         </div>
       </div>
-      <button onClick={() => onDelete(record.id)} className="text-slate-200 hover:text-rose-500 transition-colors opacity-0 lg:group-hover:opacity-100 focus:opacity-100 px-2 py-1"><Trash2 size={16}/></button>
+      <div className="flex gap-2 opacity-0 lg:group-hover:opacity-100 focus:opacity-100">
+        <button onClick={() => onEdit(recordIndex)} className="text-indigo-500 hover:text-indigo-700 transition-colors px-2 py-1 font-bold text-[11px]">編集</button>
+        <button onClick={() => onDelete(record.id)} className="text-slate-200 hover:text-rose-500 transition-colors px-2 py-1"><Trash2 size={16}/></button>
+      </div>
     </div>
     <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
       <DataBox label="実践G数" value={`${record.stats?.personal?.games}G`} />
@@ -633,7 +859,7 @@ const TechDetailSection = ({ formData, handleInputChange }) => (
 
 const SmallRoleLossSection = ({ currentConfig, formData, handleInputChange }) => (
   <div id="small-role-loss-section" className="bg-rose-50 p-4 rounded-2xl border border-rose-100 grid grid-cols-3 gap-2">
-    <InputPlain label={`${currentConfig.watermelonName}零し`} name="watermelonLossCount" value={formData.watermelonLossCount} onChange={handleInputChange} color="text-rose-400" />
+    <InputPlain label={`${currentConfig.watermelonName}欠損`} name="watermelonLossCount" value={formData.watermelonLossCount} onChange={handleInputChange} color="text-rose-400" />
     <InputPlain label={`${currentConfig.cherryName}欠損`} name="cherryLossCount" value={formData.cherryLossCount} onChange={handleInputChange} color="text-rose-400" />
     <InputPlain label="他損失(枚)" name="otherLossCount" value={formData.otherLossCount} onChange={handleInputChange} color="text-rose-400" />
   </div>
@@ -645,5 +871,71 @@ const InvestmentRecoverySection = ({ formData, handleInputChange }) => (
     <InputWithUnit label="回収" name="recovery" value={formData.recovery} onChange={handleInputChange} unit={formData.recoveryUnit} unitName="recoveryUnit" options={["枚", "円"]} />
   </div>
 );
+
+const RecentHistorySection = ({ records, onEdit }) => {
+  const recentRecords = [...records].reverse().slice(0, 5);
+
+  if (recentRecords.length === 0) {
+    return (
+      <div id="recent-history-section" className="mt-8 p-6 bg-slate-50 rounded-2xl border border-slate-100">
+        <h3 className="text-sm font-bold text-slate-600 mb-4 flex items-center gap-2">
+          <History size={16} />
+          直近5件の履歴
+        </h3>
+        <p className="text-[11px] text-slate-400 text-center py-4">記録はまだありません</p>
+      </div>
+    );
+  }
+
+  return (
+    <div id="recent-history-section" className="mt-8 space-y-3">
+      <h3 className="text-sm font-bold text-slate-600 flex items-center gap-2">
+        <History size={16} />
+        直近5件の履歴
+      </h3>
+      <div className="space-y-2">
+        {recentRecords.map((record, index) => {
+          const actualIndex = records.length - 1 - index;
+          const lRate = Number(record.lendingRate || 20);
+          const invMedals = record.investmentUnit === '枚' ? Number(record.investment) : Number(record.investment) / lRate;
+          const recMedals = record.recoveryUnit === '枚' ? Number(record.recovery) : Number(record.recovery) / (lRate * 50 / Number(record.exchangeRate));
+          const diffMedals = Math.floor(recMedals - invMedals);
+          const diffYen = Math.floor(diffMedals * lRate);
+          const isProfit = diffMedals >= 0;
+
+          return (
+            <div key={index} className="p-3 bg-white rounded-lg border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all group">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 cursor-pointer" onClick={() => onEdit(actualIndex)}>
+                  <p className="text-[11px] font-bold text-slate-700">{record.date} - {record.machineName}</p>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    投資: {record.investment}{record.investmentUnit} / 回収: {record.recovery}{record.recoveryUnit}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className={`text-[12px] font-bold ${isProfit ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {isProfit ? '+' : ''}{diffMedals} 枚
+                    </p>
+                    <p className={`text-[11px] font-semibold ${isProfit ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {isProfit ? '+' : ''}{diffYen.toLocaleString()} 円
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onEdit(actualIndex)}
+                    className="p-2 bg-indigo-100 text-indigo-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold hover:bg-indigo-200 whitespace-nowrap"
+                  >
+                    編集
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 export default App;
