@@ -399,10 +399,7 @@ const App = () => {
                   handleInputChange={handleInputChange}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <InputWithUnit label="投資" name="investment" value={formData.investment} onChange={handleInputChange} unit={formData.investmentUnit} unitName="investmentUnit" options={["円", "枚"]} />
-                  <InputWithUnit label="回収" name="recovery" value={formData.recovery} onChange={handleInputChange} unit={formData.recoveryUnit} unitName="recoveryUnit" options={["枚", "円"]} />
-                </div>
+                <InvestmentRecoverySection formData={formData} handleInputChange={handleInputChange} />
 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center border-b pb-2">
@@ -583,6 +580,13 @@ const SmallRoleLossSection = ({ currentConfig, formData, handleInputChange }) =>
     <InputPlain label={`${currentConfig.watermelonName}零し`} name="watermelonLossCount" value={formData.watermelonLossCount} onChange={handleInputChange} color="text-rose-400" />
     <InputPlain label={`${currentConfig.cherryName}欠損`} name="cherryLossCount" value={formData.cherryLossCount} onChange={handleInputChange} color="text-rose-400" />
     <InputPlain label="他損失(枚)" name="otherLossCount" value={formData.otherLossCount} onChange={handleInputChange} color="text-rose-400" />
+  </div>
+);
+
+const InvestmentRecoverySection = ({ formData, handleInputChange }) => (
+  <div id="investment-recovery-section" className="grid grid-cols-2 gap-4">
+    <InputWithUnit label="投資" name="investment" value={formData.investment} onChange={handleInputChange} unit={formData.investmentUnit} unitName="investmentUnit" options={["円", "枚"]} />
+    <InputWithUnit label="回収" name="recovery" value={formData.recovery} onChange={handleInputChange} unit={formData.recoveryUnit} unitName="recoveryUnit" options={["枚", "円"]} />
   </div>
 );
 
