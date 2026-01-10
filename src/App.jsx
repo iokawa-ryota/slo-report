@@ -426,25 +426,7 @@ const App = () => {
                       <InputPlain label="失敗回数" name="techMissCount" value={formData.techMissCount} onChange={handleInputChange} />
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
-                        <div className="space-y-3">
-                          <label className="text-[10px] font-black text-indigo-600 uppercase border-b border-indigo-100 block pb-1">中リール第1停止</label>
-                          <div className="grid grid-cols-3 gap-2">
-                            <InputPlain label="スイカ揃い(15枚)" name="midSuccess" placeholder="成功" value={formData.midSuccess} onChange={handleInputChange} />
-                            <InputPlain label="救済(15枚)" name="midNotWatermelon" placeholder="救済" value={formData.midNotWatermelon} onChange={handleInputChange} color="text-indigo-400" />
-                            <InputPlain label="失敗(4枚)" name="midMiss" placeholder="失敗" value={formData.midMiss} onChange={handleInputChange} color="text-rose-500" />
-                          </div>
-                        </div>
-                        <div className="space-y-3 pt-2">
-                          <label className="text-[10px] font-black text-indigo-600 uppercase border-b border-indigo-100 block pb-1">右リール第1停止</label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <InputPlain label="成功(15枚)" name="rightSuccess" placeholder="成功" value={formData.rightSuccess} onChange={handleInputChange} />
-                            <InputPlain label="失敗(4枚)" name="rightMiss" placeholder="失敗" value={formData.rightMiss} onChange={handleInputChange} color="text-rose-500" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <TechDetailSection formData={formData} handleInputChange={handleInputChange} />
                   )}
 
                   <div className="bg-rose-50 p-4 rounded-2xl border border-rose-100 grid grid-cols-3 gap-2">
@@ -574,6 +556,28 @@ const GamesBonusSection = ({ isMidStart, setIsMidStart, formData, handleInputCha
       <InputPlain label="終了総G" name="totalGames" value={formData.totalGames} onChange={handleInputChange} />
       <InputPlain label="終了B" name="bigCount" value={formData.bigCount} onChange={handleInputChange} />
       <InputPlain label="終了R" name="regCount" value={formData.regCount} onChange={handleInputChange} />
+    </div>
+  </div>
+);
+
+const TechDetailSection = ({ formData, handleInputChange }) => (
+  <div id="tech-detail-section" className="space-y-4">
+    <div id="mid-reel-section" className="grid grid-cols-1 gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+      <div className="space-y-3">
+        <label className="text-[10px] font-black text-indigo-600 uppercase border-b border-indigo-100 block pb-1">中リール第1停止</label>
+        <div id="mid-inputs" className="grid grid-cols-3 gap-2">
+          <InputPlain label="スイカ揃い(15枚)" name="midSuccess" placeholder="成功" value={formData.midSuccess} onChange={handleInputChange} />
+          <InputPlain label="救済(15枚)" name="midNotWatermelon" placeholder="救済" value={formData.midNotWatermelon} onChange={handleInputChange} color="text-indigo-400" />
+          <InputPlain label="失敗(4枚)" name="midMiss" placeholder="失敗" value={formData.midMiss} onChange={handleInputChange} color="text-rose-500" />
+        </div>
+      </div>
+      <div id="right-reel-section" className="space-y-3 pt-2">
+        <label className="text-[10px] font-black text-indigo-600 uppercase border-b border-indigo-100 block pb-1">右リール第1停止</label>
+        <div id="right-inputs" className="grid grid-cols-2 gap-2">
+          <InputPlain label="成功(15枚)" name="rightSuccess" placeholder="成功" value={formData.rightSuccess} onChange={handleInputChange} />
+          <InputPlain label="失敗(4枚)" name="rightMiss" placeholder="失敗" value={formData.rightMiss} onChange={handleInputChange} color="text-rose-500" />
+        </div>
+      </div>
     </div>
   </div>
 );
