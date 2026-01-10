@@ -392,24 +392,12 @@ const App = () => {
                   <InputPlain label="日付" name="date" type="date" value={formData.date} onChange={handleInputChange} />
                 </div>
                 
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[10px] font-black text-slate-400 uppercase">ゲーム数・ボーナス</span>
-                    <button type="button" onClick={() => setIsMidStart(!isMidStart)} className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${isMidStart ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-400'}`}>途中打ち設定</button>
-                  </div>
-                  {isMidStart && (
-                    <div className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-200">
-                      <InputPlain label="開始G" name="startTotalGames" value={formData.startTotalGames} onChange={handleInputChange} />
-                      <InputPlain label="開始B" name="startBigCount" value={formData.startBigCount} onChange={handleInputChange} />
-                      <InputPlain label="開始R" name="startRegCount" value={formData.startRegCount} onChange={handleInputChange} />
-                    </div>
-                  )}
-                  <div className="grid grid-cols-3 gap-2">
-                    <InputPlain label="終了総G" name="totalGames" value={formData.totalGames} onChange={handleInputChange} />
-                    <InputPlain label="終了B" name="bigCount" value={formData.bigCount} onChange={handleInputChange} />
-                    <InputPlain label="終了R" name="regCount" value={formData.regCount} onChange={handleInputChange} />
-                  </div>
-                </div>
+                <GamesBonusSection 
+                  isMidStart={isMidStart} 
+                  setIsMidStart={setIsMidStart}
+                  formData={formData}
+                  handleInputChange={handleInputChange}
+                />
 
                 <div className="grid grid-cols-2 gap-4">
                   <InputWithUnit label="投資" name="investment" value={formData.investment} onChange={handleInputChange} unit={formData.investmentUnit} unitName="investmentUnit" options={["円", "枚"]} />
@@ -565,6 +553,27 @@ const InputWithUnit = ({ label, name, value, onChange, unit, unitName, options }
       <select name={unitName} value={unit} onChange={onChange} className="bg-slate-50 px-2 font-bold text-[10px] border-l border-slate-200 cursor-pointer outline-none">
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
+    </div>
+  </div>
+);
+
+const GamesBonusSection = ({ isMidStart, setIsMidStart, formData, handleInputChange }) => (
+  <div id="games-bonus-section" className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-4">
+    <div className="flex justify-between items-center">
+      <span className="text-[10px] font-black text-slate-400 uppercase">ゲーム数・ボーナス</span>
+      <button type="button" onClick={() => setIsMidStart(!isMidStart)} className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${isMidStart ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-400'}`}>途中打ち設定</button>
+    </div>
+    {isMidStart && (
+      <div id="mid-start-section" className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-200">
+        <InputPlain label="開始G" name="startTotalGames" value={formData.startTotalGames} onChange={handleInputChange} />
+        <InputPlain label="開始B" name="startBigCount" value={formData.startBigCount} onChange={handleInputChange} />
+        <InputPlain label="開始R" name="startRegCount" value={formData.startRegCount} onChange={handleInputChange} />
+      </div>
+    )}
+    <div id="final-games-section" className="grid grid-cols-3 gap-2">
+      <InputPlain label="終了総G" name="totalGames" value={formData.totalGames} onChange={handleInputChange} />
+      <InputPlain label="終了B" name="bigCount" value={formData.bigCount} onChange={handleInputChange} />
+      <InputPlain label="終了R" name="regCount" value={formData.regCount} onChange={handleInputChange} />
     </div>
   </div>
 );
