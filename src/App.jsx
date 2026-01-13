@@ -333,7 +333,7 @@ const App = () => {
         totalGames: '', bigCount: '', regCount: '', investment: '', recovery: '', 
         techMissCount: '', techAttemptCount: '', 
         midSuccess: '', midNotWatermelon: '', midMiss: '', rightSuccess: '', rightMiss: '',
-        watermelonLossCount: '0', cherryLossCount: '0', otherLossCount: '0'
+        watermelonLossCount: '0', cherryLossCount: '0', otherLossCount: '0', memo: ''
       }));
     } catch (error) {
       console.error('Error saving record:', error);
@@ -349,6 +349,18 @@ const App = () => {
     setActiveTab('form');
   };
 
+  const openNewRecordForm = () => {
+    setEditingIndex(null);
+    setFormData(prev => ({
+      ...prev, 
+      totalGames: '', bigCount: '', regCount: '', investment: '', recovery: '', 
+      techMissCount: '', techAttemptCount: '', 
+      midSuccess: '', midNotWatermelon: '', midMiss: '', rightSuccess: '', rightMiss: '',
+      watermelonLossCount: '0', cherryLossCount: '0', otherLossCount: '0', memo: ''
+    }));
+    setShowForm(true);
+  };
+
   const cancelEdit = () => {
     setEditingIndex(null);
     setShowForm(false);
@@ -358,7 +370,7 @@ const App = () => {
       totalGames: '', bigCount: '', regCount: '', investment: '', recovery: '', 
       techMissCount: '', techAttemptCount: '', 
       midSuccess: '', midNotWatermelon: '', midMiss: '', rightSuccess: '', rightMiss: '',
-      watermelonLossCount: '0', cherryLossCount: '0', otherLossCount: '0'
+      watermelonLossCount: '0', cherryLossCount: '0', otherLossCount: '0', memo: ''
     }));
   };
 
@@ -546,7 +558,7 @@ const App = () => {
             </div>
           </div>
           <button 
-            onClick={() => setShowForm(!showForm)}
+            onClick={openNewRecordForm}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-black text-xs shadow-md hover:bg-indigo-700 transition-all flex items-center gap-2"
           >
             <PlusCircle size={16} /> <span className="hidden sm:inline">データ入力</span>
