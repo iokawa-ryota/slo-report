@@ -4,8 +4,6 @@ import {
   updateDoc,
   deleteDoc,
   query,
-  where,
-  getDocs,
   onSnapshot,
   doc,
   serverTimestamp,
@@ -154,7 +152,7 @@ export const migrateFromLocalStorage = async (records) => {
 
   const migratedIds = [];
   for (const record of records) {
-    const { id, ...recordData } = record;
+    const { id: _id, ...recordData } = record;
     try {
       const newId = await createRecord(recordData);
       migratedIds.push(newId);

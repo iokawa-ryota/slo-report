@@ -31,7 +31,7 @@ import {
 import { MACHINE_CONFIG, MACHINE_OPTIONS } from './config/machineConfig';
 import { calculateInputStats, calculateLoss } from './utils/recordCalculations';
 import { subscribeToRecords, createRecord, updateRecord, deleteRecord as deleteRecordFromDb, migrateFromLocalStorage } from './firebase/db';
-import { loginAnonymously, subscribeToAuthState, logout, getCurrentUser, signInWithGoogle } from './firebase/auth';
+import { loginAnonymously, subscribeToAuthState, logout, signInWithGoogle } from './firebase/auth';
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -587,7 +587,7 @@ const App = () => {
           {(activeTab === 'history' || (activeTab === 'machine-stats' && machineSpecificData.records.length > 0)) && (
             <div className="space-y-4 mt-4 text-left">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{activeTab === 'history' ? '全履歴' : `${selectedMachineTab} の履歴`}</h3>
-              {(activeTab === 'history' ? filterRecordsByDateRange(records) : machineSpecificData.records).map((r, idx) => {
+              {(activeTab === 'history' ? filterRecordsByDateRange(records) : machineSpecificData.records).map((r) => {
                 const actualIndex = records.indexOf(r);
                 return <RecordItem key={r.id} record={r} recordIndex={actualIndex} onDelete={deleteRecord} onEdit={loadRecordForEdit} />;
               })}
@@ -854,7 +854,7 @@ const TechDetailSection_LHanabi = ({ formData, handleInputChange }) => (
   </div>
 );
 
-const TechDetailSection_Other = ({ formData, handleInputChange }) => (
+const TechDetailSection_Other = () => (
   <div id="tech-detail-section-other" className="space-y-4">
     <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
       <p className="text-[11px] text-slate-500 text-center">この機種は技術介入の詳細トラッキングに対応していません。簡易モードで記録してください。</p>
