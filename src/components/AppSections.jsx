@@ -224,7 +224,7 @@ export const ShinHanabiTechInterventionSection = ({ formData, handleInputChange 
   </div>
 );
 
-export const TechDetailSectionLHanabi = ({ formData, handleInputChange }) => (
+export const LHanabiTechInterventionSection = ({ formData, handleInputChange }) => (
   <div id="tech-detail-section-l-hanabi" className="space-y-4">
     <div id="right-reel-section" className="grid grid-cols-1 gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
       <div className="space-y-3">

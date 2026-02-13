@@ -24,7 +24,7 @@ import {
   GamesBonusSection,
   VersusReviseTechInterventionSection,
   ShinHanabiTechInterventionSection,
-  TechDetailSectionLHanabi,
+  LHanabiTechInterventionSection,
   TechDetailSectionOther,
   SmallRoleLossSection,
   InvestmentRecoverySection,
@@ -346,7 +346,7 @@ const App = () => {
   const detailSectionComponents = {
     versusRevise: VersusReviseTechInterventionSection,
     hanabi: ShinHanabiTechInterventionSection,
-    lHanabi: TechDetailSectionLHanabi,
+    lHanabi: LHanabiTechInterventionSection,
     other: TechDetailSectionOther
   };
   const DetailSectionComponent = detailSectionComponents[currentConfig.detailVariant] || TechDetailSectionOther;
