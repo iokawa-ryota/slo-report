@@ -957,7 +957,7 @@ const InvestmentRecoverySection = ({ formData, handleInputChange }) => (
 );
 
 const RecentHistorySection = ({ records, onEdit }) => {
-  const recentRecords = [...records].reverse().slice(0, 5);
+  const recentRecords = [...records].slice(0, 5);
 
   if (recentRecords.length === 0) {
     return (
@@ -979,7 +979,7 @@ const RecentHistorySection = ({ records, onEdit }) => {
       </h3>
       <div className="space-y-2">
         {recentRecords.map((record, index) => {
-          const actualIndex = records.length - 1 - index;
+          const actualIndex = index;
           const lRate = Number(record.lendingRate || 20);
           const invMedals = record.investmentUnit === '枚' ? Number(record.investment) : Number(record.investment) / lRate;
           const recMedals = record.recoveryUnit === '枚' ? Number(record.recovery) : Number(record.recovery) / (lRate * 50 / Number(record.exchangeRate));
