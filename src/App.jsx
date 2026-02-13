@@ -957,7 +957,7 @@ const InvestmentRecoverySection = ({ formData, handleInputChange }) => (
 );
 
 const RecentHistorySection = ({ records, onEdit }) => {
-  const recentRecords = [...records].reverse().slice(0, 5);
+  const recentRecords = records.slice(0, 5);
 
   if (recentRecords.length === 0) {
     return (
@@ -979,7 +979,6 @@ const RecentHistorySection = ({ records, onEdit }) => {
       </h3>
       <div className="space-y-2">
         {recentRecords.map((record, index) => {
-          const actualIndex = records.length - 1 - index;
           const lRate = Number(record.lendingRate || 20);
           const invMedals = record.investmentUnit === '枚' ? Number(record.investment) : Number(record.investment) / lRate;
           const recMedals = record.recoveryUnit === '枚' ? Number(record.recovery) : Number(record.recovery) / (lRate * 50 / Number(record.exchangeRate));
@@ -990,7 +989,7 @@ const RecentHistorySection = ({ records, onEdit }) => {
           return (
             <div key={index} className="p-3 bg-white rounded-lg border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all group">
               <div className="flex items-center justify-between">
-                <div className="flex-1 cursor-pointer" onClick={() => onEdit(actualIndex)}>
+                <div className="flex-1 cursor-pointer" onClick={() => onEdit(index)}>
                   <p className="text-[11px] font-bold text-slate-700">{record.date} - {record.machineName}</p>
                   <p className="text-[10px] text-slate-500 mt-1">
                     投資: {record.investment}{record.investmentUnit} / 回収: {record.recovery}{record.recoveryUnit}
@@ -1007,7 +1006,7 @@ const RecentHistorySection = ({ records, onEdit }) => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => onEdit(actualIndex)}
+                    onClick={() => onEdit(index)}
                     className="p-2 bg-indigo-100 text-indigo-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold hover:bg-indigo-200 whitespace-nowrap"
                   >
                     編集
