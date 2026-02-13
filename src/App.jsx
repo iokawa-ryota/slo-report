@@ -256,7 +256,7 @@ const App = () => {
     const recYen = formData.recoveryUnit === '円' ? Number(formData.recovery) : Math.floor(Number(formData.recovery) * ((lRate * 50) / eRate));
     const machineSection = (name => {
       if (name === 'バーサスリヴァイズ') return 'versusRevise';
-      if (name === '新ハナビ') return 'hanabi';
+      if (name === '新ハナビ' || name === 'Lハナビ') return 'hanabi';
       return 'other';
     })(formData.machineName);
     
@@ -699,7 +699,7 @@ const App = () => {
                   ) : (
                     <>
                       {formData.machineName === 'バーサスリヴァイズ' && <TechDetailSection_VersusRevise formData={formData} handleInputChange={handleInputChange} />}
-                      {formData.machineName === '新ハナビ' && <TechDetailSection_Hanabi formData={formData} handleInputChange={handleInputChange} />}
+                      {(formData.machineName === '新ハナビ' || formData.machineName === 'Lハナビ') && <TechDetailSection_Hanabi formData={formData} handleInputChange={handleInputChange} />}
                       {formData.machineName === 'その他' && <TechDetailSection_Other formData={formData} handleInputChange={handleInputChange} />}
                     </>
                   )}

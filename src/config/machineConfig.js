@@ -34,6 +34,18 @@ export const MACHINE_CONFIG = {
       right: true
     }
   },
+  'Lハナビ': {
+    regMax: 71,
+    techLossPerMiss: 13,
+    watermelonLoss: 15,
+    cherryLoss: 4,
+    watermelonName: '氷',
+    cherryName: 'チェリー',
+    detailFields: {
+      mid: true,
+      right: true
+    }
+  },
   'その他': {
     regMax: 0,
     techLossPerMiss: 10,
