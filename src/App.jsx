@@ -10,7 +10,7 @@ import {
   LogOut,
   Loader
 } from 'lucide-react';
-import { MACHINE_CONFIG, MACHINE_OPTIONS } from './config/machineConfig';
+import { MACHINE_OPTIONS, getMachineConfig } from './config/machineConfig';
 import { calculateInputStats, calculateLoss } from './utils/recordCalculations';
 import { subscribeToRecords, createRecord, updateRecord, deleteRecord as deleteRecordFromDb, migrateFromLocalStorage } from './firebase/db';
 import { loginAnonymously, subscribeToAuthState, logout, signInWithGoogle } from './firebase/auth';
@@ -119,13 +119,13 @@ const App = () => {
     memo: ''
   });
 
-  const currentConfig = MACHINE_CONFIG[formData.machineName] || MACHINE_CONFIG['その他'];
+  const currentConfig = getMachineConfig(formData.machineName);
   const detailFields = currentConfig.detailFields || DEFAULT_DETAIL_FIELDS;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === 'machineName') {
-      const nextConfig = MACHINE_CONFIG[value] || MACHINE_CONFIG['その他'];
+      const nextConfig = getMachineConfig(value);
       const nextDetailFields = nextConfig.detailFields || DEFAULT_DETAIL_FIELDS;
       setFormData(prev => ({
         ...prev,

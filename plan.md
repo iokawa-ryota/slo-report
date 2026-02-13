@@ -36,11 +36,12 @@
 - `src/config/machineConfig.js` の `MACHINE_CONFIG` が基本設定ソース。
 - ナビとフォームの機種選択は `MACHINE_OPTIONS = Object.keys(MACHINE_CONFIG)` で自動反映。
 - 現在の設定キー:
+  - `machineSection` / `detailVariant`（列挙値を定義して運用）
   - `regMax`
   - `techLossPerMiss`
   - `watermelonLoss` / `cherryLoss`
   - `watermelonName` / `cherryName`
-  - `detailFields`（現状は補助情報。表示分岐は主に `App.jsx` の機種名条件で実施）
+  - `detailFields`（`mid/right` の使用有無）
 
 ### 5. 技術介入UIの実装方式
 - `calcMode` が `simple` / `detail` を切替。
@@ -68,7 +69,7 @@
 ## 既知の設計課題（拡張前に把握しておく）
 - `App.jsx` が大きく、機種追加の影響範囲が広い。
 - 機種仕様が `machineConfig` と `App.jsx` の条件分岐に分散している。
-- `detailFields` が実装上の単一制御点になっていない。
+- 技術介入UIのラベル差分はまだコンポーネント実装側にある（完全な設定駆動化は未完）。
 
 ## 改善計画（段階的）
 
@@ -99,12 +100,14 @@
 - 現時点では該当なし（`lint` とテストが通る状態を維持中）。
 
 ### 要監視（中優先）
-- `detailFields` / `detailVariant` の運用ルールを固定化して、追加時に `App.jsx` 修正が不要か定期確認。
+- 現時点では該当なし（運用ルール固定化とテスト追加を実施済み）。
 
 ### 対応済み（参考）
 - `npm run lint` のエラー/警告を解消（現在 warning 0）。
 - `App.jsx` の UI サブコンポーネントを `src/components/AppSections.jsx` へ分離。
 - 機種切替時に不要な `mid/right` フォーム入力を自動クリアする仕様を実装。
+- `machineConfig` の必須キー/許可値検証と `getMachineConfig` ヘルパーを追加。
+- `machineConfig` の回帰テストを追加（`machineConfig.test.js`）。
 - 直近5件履歴の表示順修正（最新順）。
 - モバイルで投資/回収プルダウンが見えない問題を修正。
 - `Lハナビ` 追加と `mid-reel-section` 非表示対応。
