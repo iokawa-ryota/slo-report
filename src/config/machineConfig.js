@@ -5,6 +5,8 @@
 
 export const MACHINE_CONFIG = {
   'バーサスリヴァイズ': {
+    machineSection: 'versusRevise',
+    detailVariant: 'versusRevise',
     // REG最大獲得枚数
     regMax: 112,
     // 技術介入1回のミスによる損失枚数
@@ -23,6 +25,8 @@ export const MACHINE_CONFIG = {
     }
   },
   '新ハナビ': {
+    machineSection: 'hanabi',
+    detailVariant: 'hanabi',
     regMax: 71,
     techLossPerMiss: 13,
     watermelonLoss: 15,
@@ -35,6 +39,8 @@ export const MACHINE_CONFIG = {
     }
   },
   'Lハナビ': {
+    machineSection: 'hanabi',
+    detailVariant: 'lHanabi',
     regMax: 71,
     techLossPerMiss: 13,
     watermelonLoss: 15,
@@ -47,6 +53,8 @@ export const MACHINE_CONFIG = {
     }
   },
   'その他': {
+    machineSection: 'other',
+    detailVariant: 'other',
     regMax: 0,
     techLossPerMiss: 10,
     watermelonLoss: 15,
