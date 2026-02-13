@@ -116,7 +116,7 @@ export const RecordItem = ({ record, recordIndex, onDelete, onEdit }) => (
           <div className="text-[9px] font-bold text-slate-400 flex items-center gap-1"><Calendar size={10} /> {record.date}</div>
         </div>
       </div>
-      <div className="flex gap-2 opacity-0 lg:group-hover:opacity-100 focus:opacity-100">
+      <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100">
         <button onClick={() => onEdit(recordIndex)} className="text-indigo-500 hover:text-indigo-700 transition-colors px-2 py-1 font-bold text-[11px]">編集</button>
         <button onClick={() => onDelete(record.id)} className="text-slate-200 hover:text-rose-500 transition-colors px-2 py-1"><Trash2 size={16} /></button>
       </div>
