@@ -22,10 +22,10 @@ import {
   InputSelect,
   InputPlain,
   GamesBonusSection,
-  TechDetailSection_VersusRevise,
-  TechDetailSection_Hanabi,
-  TechDetailSection_LHanabi,
-  TechDetailSection_Other,
+  TechDetailSectionVersusRevise,
+  TechDetailSectionHanabi,
+  TechDetailSectionLHanabi,
+  TechDetailSectionOther,
   SmallRoleLossSection,
   InvestmentRecoverySection,
   RecentHistorySection
@@ -344,12 +344,12 @@ const App = () => {
   };
 
   const detailSectionComponents = {
-    versusRevise: TechDetailSection_VersusRevise,
-    hanabi: TechDetailSection_Hanabi,
-    lHanabi: TechDetailSection_LHanabi,
-    other: TechDetailSection_Other
+    versusRevise: TechDetailSectionVersusRevise,
+    hanabi: TechDetailSectionHanabi,
+    lHanabi: TechDetailSectionLHanabi,
+    other: TechDetailSectionOther
   };
-  const DetailSectionComponent = detailSectionComponents[currentConfig.detailVariant] || TechDetailSection_Other;
+  const DetailSectionComponent = detailSectionComponents[currentConfig.detailVariant] || TechDetailSectionOther;
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 relative">

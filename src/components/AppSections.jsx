@@ -180,7 +180,7 @@ export const GamesBonusSection = ({ isMidStart, setIsMidStart, formData, handleI
   </div>
 );
 
-export const TechDetailSection_VersusRevise = ({ formData, handleInputChange }) => (
+export const TechDetailSectionVersusRevise = ({ formData, handleInputChange }) => (
   <div id="tech-detail-section-versus-revise" className="space-y-4">
     <div id="mid-reel-section" className="grid grid-cols-1 gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
       <div className="space-y-3">
@@ -202,7 +202,7 @@ export const TechDetailSection_VersusRevise = ({ formData, handleInputChange }) 
   </div>
 );
 
-export const TechDetailSection_Hanabi = ({ formData, handleInputChange }) => (
+export const TechDetailSectionHanabi = ({ formData, handleInputChange }) => (
   <div id="tech-detail-section-hanabi" className="space-y-4">
     <div id="mid-reel-section" className="grid grid-cols-1 gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
       <div className="space-y-3">
@@ -224,7 +224,7 @@ export const TechDetailSection_Hanabi = ({ formData, handleInputChange }) => (
   </div>
 );
 
-export const TechDetailSection_LHanabi = ({ formData, handleInputChange }) => (
+export const TechDetailSectionLHanabi = ({ formData, handleInputChange }) => (
   <div id="tech-detail-section-l-hanabi" className="space-y-4">
     <div id="right-reel-section" className="grid grid-cols-1 gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
       <div className="space-y-3">
@@ -238,7 +238,7 @@ export const TechDetailSection_LHanabi = ({ formData, handleInputChange }) => (
   </div>
 );
 
-export const TechDetailSection_Other = () => (
+export const TechDetailSectionOther = () => (
   <div id="tech-detail-section-other" className="space-y-4">
     <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
       <p className="text-[11px] text-slate-500 text-center">この機種は技術介入の詳細トラッキングに対応していません。簡易モードで記録してください。</p>
