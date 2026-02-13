@@ -813,9 +813,9 @@ const InputPlain = ({ label, name, value, onChange, type = "number", color = "te
 const InputWithUnit = ({ label, name, value, onChange, unit, unitName, options }) => (
   <div className="space-y-1 w-full">
     <label className="text-[10px] font-black text-slate-400 uppercase px-1">{label}</label>
-    <div className="flex rounded-xl overflow-hidden border border-slate-200 bg-white focus-within:border-indigo-500 transition-all">
-      <input type="number" name={name} value={value} onChange={onChange} className="flex-1 p-3 font-bold outline-none text-sm" />
-      <select name={unitName} value={unit} onChange={onChange} className="bg-slate-50 px-2 font-bold text-[10px] border-l border-slate-200 cursor-pointer outline-none">
+    <div className="flex items-stretch rounded-xl overflow-hidden border border-slate-200 bg-white focus-within:border-indigo-500 transition-all">
+      <input type="number" name={name} value={value} onChange={onChange} className="min-w-0 flex-1 p-3 font-bold outline-none text-sm" />
+      <select name={unitName} value={unit} onChange={onChange} className="min-w-[56px] bg-slate-50 px-2.5 font-bold text-xs border-l border-slate-200 cursor-pointer outline-none">
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
     </div>
@@ -927,7 +927,7 @@ const SmallRoleLossSection = ({ currentConfig, formData, handleInputChange }) =>
 
 const InvestmentRecoverySection = ({ formData, handleInputChange }) => (
   <div id="investment-recovery-section" className="space-y-4">
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
       <InputWithUnit label="投資" name="investment" value={formData.investment} onChange={handleInputChange} unit={formData.investmentUnit} unitName="investmentUnit" options={["円", "枚"]} />
       <InputWithUnit label="回収" name="recovery" value={formData.recovery} onChange={handleInputChange} unit={formData.recoveryUnit} unitName="recoveryUnit" options={["枚", "円"]} />
     </div>
@@ -942,7 +942,7 @@ const InvestmentRecoverySection = ({ formData, handleInputChange }) => (
           <button
             key={rate.value}
             onClick={() => handleInputChange({ target: { name: 'lendingRate', value: rate.value } })}
-            className={`px-3 py-2 rounded-lg font-semibold text-sm transition-all ${
+            className={`px-2 py-2.5 rounded-lg font-semibold text-xs sm:text-sm whitespace-nowrap transition-all ${
               formData.lendingRate === rate.value
                 ? 'bg-indigo-600 text-white shadow-md'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
