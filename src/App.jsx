@@ -29,6 +29,7 @@ import {
   ReferenceLine
 } from 'recharts';
 import { MACHINE_CONFIG, MACHINE_OPTIONS } from './config/machineConfig';
+import { calculateInputStats, calculateLoss } from './utils/recordCalculations';
 import { subscribeToRecords, createRecord, updateRecord, deleteRecord as deleteRecordFromDb, migrateFromLocalStorage } from './firebase/db';
 import { loginAnonymously, subscribeToAuthState, logout, getCurrentUser, signInWithGoogle } from './firebase/auth';
 
@@ -191,63 +192,11 @@ const App = () => {
   }, [records, dateRangeStart, dateRangeEnd]);
 
   const inputStats = useMemo(() => {
-    const g_end = Number(formData.totalGames) || 0;
-    const b_end = Number(formData.bigCount) || 0;
-    const r_end = Number(formData.regCount) || 0;
-    const g_start = isMidStart ? Number(formData.startTotalGames || 0) : 0;
-    const b_start = isMidStart ? Number(formData.startBigCount || 0) : 0;
-    const r_start = isMidStart ? Number(formData.startRegCount || 0) : 0;
-    const myGames = Math.max(0, g_end - g_start);
-    const myBig = Math.max(0, b_end - b_start);
-    const myReg = Math.max(0, r_end - r_start);
-    const calcProb = (g, c) => (c > 0 ? (g / c).toFixed(1) : '-');
-
-    let accuracy = null;
-    if (calcMode === 'simple') {
-      const misses = Number(formData.techMissCount || 0);
-      const attempts = Number(formData.techAttemptCount || 0);
-      if (attempts > 0) accuracy = (((attempts - misses) / attempts) * 100).toFixed(1);
-    } else {
-      const midS = detailFields.mid ? Number(formData.midSuccess || 0) : 0;
-      const midM = detailFields.mid ? Number(formData.midMiss || 0) : 0;
-      const rightS = detailFields.right ? Number(formData.rightSuccess || 0) : 0;
-      const rightM = detailFields.right ? Number(formData.rightMiss || 0) : 0;
-      
-      const requiredAttempts = midS + midM + rightS + rightM;
-      if (requiredAttempts > 0) {
-        accuracy = (((midS + rightS) / requiredAttempts) * 100).toFixed(1);
-      }
-    }
-
-    return {
-      personal: {
-        games: myGames, big: myBig, reg: myReg,
-        bigProb: calcProb(myGames, myBig),
-        regProb: calcProb(myGames, myReg),
-        combinedProb: calcProb(myGames, myBig + myReg),
-        techAccuracy: accuracy
-      }
-    };
+    return calculateInputStats({ formData, isMidStart, calcMode, detailFields });
   }, [formData, isMidStart, calcMode, detailFields.mid, detailFields.right]);
 
   const calculatedLoss = useMemo(() => {
-    let techLoss = 0;
-    let totalMisses = 0;
-    if (calcMode === 'simple') {
-      totalMisses = Number(formData.techMissCount || 0);
-      techLoss = totalMisses * currentConfig.techLossPerMiss;
-    } else if (calcMode === 'detail') {
-      const midMiss = detailFields.mid ? Number(formData.midMiss || 0) : 0;
-      const rightMiss = detailFields.right ? Number(formData.rightMiss || 0) : 0;
-      totalMisses = midMiss + rightMiss;
-      techLoss = totalMisses * currentConfig.techLossPerMiss;
-    }
-    const wmLoss = Number(formData.watermelonLossCount || 0) * currentConfig.watermelonLoss;
-    const chLoss = Number(formData.cherryLossCount || 0) * currentConfig.cherryLoss;
-    return { 
-      total: techLoss + wmLoss + chLoss + Number(formData.otherLossCount || 0),
-      misses: totalMisses
-    };
+    return calculateLoss({ formData, calcMode, currentConfig, detailFields });
   }, [formData, currentConfig, calcMode, detailFields.mid, detailFields.right]);
 
   const handleSubmit = async (e) => {
