@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   PlusCircle, 
   Target, 
@@ -32,6 +32,8 @@ import { MACHINE_CONFIG, MACHINE_OPTIONS } from './config/machineConfig';
 import { calculateInputStats, calculateLoss } from './utils/recordCalculations';
 import { subscribeToRecords, createRecord, updateRecord, deleteRecord as deleteRecordFromDb, migrateFromLocalStorage } from './firebase/db';
 import { loginAnonymously, subscribeToAuthState, logout, signInWithGoogle } from './firebase/auth';
+
+const DEFAULT_DETAIL_FIELDS = { mid: true, right: true };
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -120,7 +122,7 @@ const App = () => {
   });
 
   const currentConfig = MACHINE_CONFIG[formData.machineName] || MACHINE_CONFIG['その他'];
-  const detailFields = currentConfig.detailFields || { mid: true, right: true };
+  const detailFields = currentConfig.detailFields || DEFAULT_DETAIL_FIELDS;
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -147,7 +149,17 @@ const App = () => {
     });
   };
 
-  const dashboardChartData = useMemo(() => getChartDataForRecords(filterRecordsByDateRange(records)), [records, dateRangeStart, dateRangeEnd]);
+  const filterRecordsByDateRange = useCallback((targetRecords) => {
+    if (!dateRangeStart && !dateRangeEnd) return targetRecords;
+    return targetRecords.filter(r => {
+      const recordDate = r.date;
+      const isAfterStart = !dateRangeStart || recordDate >= dateRangeStart;
+      const isBeforeEnd = !dateRangeEnd || recordDate <= dateRangeEnd;
+      return isAfterStart && isBeforeEnd;
+    });
+  }, [dateRangeStart, dateRangeEnd]);
+
+  const dashboardChartData = useMemo(() => getChartDataForRecords(filterRecordsByDateRange(records)), [records, filterRecordsByDateRange]);
   
   const machineSpecificData = useMemo(() => {
     const allMachineRecords = records.filter(r => r.machineName === selectedMachineTab);
@@ -171,17 +183,7 @@ const App = () => {
         techAccuracy: avgTechAccuracy,
       }
     };
-  }, [records, selectedMachineTab, dateRangeStart, dateRangeEnd]);
-
-  function filterRecordsByDateRange(targetRecords) {
-    if (!dateRangeStart && !dateRangeEnd) return targetRecords;
-    return targetRecords.filter(r => {
-      const recordDate = r.date;
-      const isAfterStart = !dateRangeStart || recordDate >= dateRangeStart;
-      const isBeforeEnd = !dateRangeEnd || recordDate <= dateRangeEnd;
-      return isAfterStart && isBeforeEnd;
-    });
-  }
+  }, [records, selectedMachineTab, filterRecordsByDateRange]);
 
   const totalStats = useMemo(() => {
     const filteredRecords = filterRecordsByDateRange(records);
@@ -189,15 +191,15 @@ const App = () => {
     const loss = filteredRecords.reduce((acc, r) => acc + (r.totalLoss || 0), 0);
     const games = filteredRecords.reduce((acc, r) => acc + (r.stats?.personal?.games || 0), 0);
     return { yen, loss, games };
-  }, [records, dateRangeStart, dateRangeEnd]);
+  }, [records, filterRecordsByDateRange]);
 
   const inputStats = useMemo(() => {
     return calculateInputStats({ formData, isMidStart, calcMode, detailFields });
-  }, [formData, isMidStart, calcMode, detailFields.mid, detailFields.right]);
+  }, [formData, isMidStart, calcMode, detailFields]);
 
   const calculatedLoss = useMemo(() => {
     return calculateLoss({ formData, calcMode, currentConfig, detailFields });
-  }, [formData, currentConfig, calcMode, detailFields.mid, detailFields.right]);
+  }, [formData, currentConfig, calcMode, detailFields]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
