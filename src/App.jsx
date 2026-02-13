@@ -124,6 +124,17 @@ const App = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (name === 'machineName') {
+      const nextConfig = MACHINE_CONFIG[value] || MACHINE_CONFIG['その他'];
+      const nextDetailFields = nextConfig.detailFields || DEFAULT_DETAIL_FIELDS;
+      setFormData(prev => ({
+        ...prev,
+        machineName: value,
+        ...(nextDetailFields.mid ? {} : { midSuccess: '', midNotWatermelon: '', midMiss: '' }),
+        ...(nextDetailFields.right ? {} : { rightSuccess: '', rightMiss: '' })
+      }));
+      return;
+    }
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
