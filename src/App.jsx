@@ -207,9 +207,10 @@ const App = () => {
       const attempts = Number(formData.techAttemptCount || 0);
       if (attempts > 0) accuracy = (((attempts - misses) / attempts) * 100).toFixed(1);
     } else {
-      const midS = Number(formData.midSuccess || 0);
-      const midN = Number(formData.midNotWatermelon || 0);
-      const midM = Number(formData.midMiss || 0);
+      const useMidInputs = formData.machineName !== 'Lハナビ';
+      const midS = useMidInputs ? Number(formData.midSuccess || 0) : 0;
+      const midN = useMidInputs ? Number(formData.midNotWatermelon || 0) : 0;
+      const midM = useMidInputs ? Number(formData.midMiss || 0) : 0;
       const rightS = Number(formData.rightSuccess || 0);
       const rightM = Number(formData.rightMiss || 0);
       
@@ -237,7 +238,8 @@ const App = () => {
       totalMisses = Number(formData.techMissCount || 0);
       techLoss = totalMisses * currentConfig.techLossPerMiss;
     } else if (calcMode === 'detail') {
-      totalMisses = Number(formData.midMiss || 0) + Number(formData.rightMiss || 0);
+      const midMiss = formData.machineName === 'Lハナビ' ? 0 : Number(formData.midMiss || 0);
+      totalMisses = midMiss + Number(formData.rightMiss || 0);
       techLoss = totalMisses * currentConfig.techLossPerMiss;
     }
     const wmLoss = Number(formData.watermelonLossCount || 0) * currentConfig.watermelonLoss;
@@ -699,7 +701,8 @@ const App = () => {
                   ) : (
                     <>
                       {formData.machineName === 'バーサスリヴァイズ' && <TechDetailSection_VersusRevise formData={formData} handleInputChange={handleInputChange} />}
-                      {(formData.machineName === '新ハナビ' || formData.machineName === 'Lハナビ') && <TechDetailSection_Hanabi formData={formData} handleInputChange={handleInputChange} />}
+                      {formData.machineName === '新ハナビ' && <TechDetailSection_Hanabi formData={formData} handleInputChange={handleInputChange} />}
+                      {formData.machineName === 'Lハナビ' && <TechDetailSection_LHanabi formData={formData} handleInputChange={handleInputChange} />}
                       {formData.machineName === 'その他' && <TechDetailSection_Other formData={formData} handleInputChange={handleInputChange} />}
                     </>
                   )}
@@ -877,6 +880,20 @@ const TechDetailSection_Hanabi = ({ formData, handleInputChange }) => (
         </div>
       </div>
       <div id="right-reel-section" className="space-y-3 pt-2">
+        <label className="text-[10px] font-black text-indigo-600 uppercase border-b border-indigo-100 block pb-1">右リール第1停止</label>
+        <div id="right-inputs" className="grid grid-cols-2 gap-2">
+          <InputPlain label="成功(15枚)" name="rightSuccess" placeholder="成功" value={formData.rightSuccess} onChange={handleInputChange} />
+          <InputPlain label="失敗(4枚)" name="rightMiss" placeholder="失敗" value={formData.rightMiss} onChange={handleInputChange} color="text-rose-500" />
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const TechDetailSection_LHanabi = ({ formData, handleInputChange }) => (
+  <div id="tech-detail-section-l-hanabi" className="space-y-4">
+    <div id="right-reel-section" className="grid grid-cols-1 gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
+      <div className="space-y-3">
         <label className="text-[10px] font-black text-indigo-600 uppercase border-b border-indigo-100 block pb-1">右リール第1停止</label>
         <div id="right-inputs" className="grid grid-cols-2 gap-2">
           <InputPlain label="成功(15枚)" name="rightSuccess" placeholder="成功" value={formData.rightSuccess} onChange={handleInputChange} />

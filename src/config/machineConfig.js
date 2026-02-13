@@ -42,7 +42,7 @@ export const MACHINE_CONFIG = {
     watermelonName: '氷',
     cherryName: 'チェリー',
     detailFields: {
-      mid: true,
+      mid: false,
       right: true
     }
   },
