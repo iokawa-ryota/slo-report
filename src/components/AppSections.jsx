@@ -180,7 +180,7 @@ export const GamesBonusSection = ({ isMidStart, setIsMidStart, formData, handleI
   </div>
 );
 
-export const TechDetailSectionVersusRevise = ({ formData, handleInputChange }) => (
+export const VersusReviseTechInterventionSection = ({ formData, handleInputChange }) => (
   <div id="tech-detail-section-versus-revise" className="space-y-4">
     <div id="mid-reel-section" className="grid grid-cols-1 gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
       <div className="space-y-3">
@@ -202,7 +202,7 @@ export const TechDetailSectionVersusRevise = ({ formData, handleInputChange }) =
   </div>
 );
 
-export const TechDetailSectionHanabi = ({ formData, handleInputChange }) => (
+export const ShinHanabiTechInterventionSection = ({ formData, handleInputChange }) => (
   <div id="tech-detail-section-hanabi" className="space-y-4">
     <div id="mid-reel-section" className="grid grid-cols-1 gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
       <div className="space-y-3">

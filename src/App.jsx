@@ -22,8 +22,8 @@ import {
   InputSelect,
   InputPlain,
   GamesBonusSection,
-  TechDetailSectionVersusRevise,
-  TechDetailSectionHanabi,
+  VersusReviseTechInterventionSection,
+  ShinHanabiTechInterventionSection,
   TechDetailSectionLHanabi,
   TechDetailSectionOther,
   SmallRoleLossSection,
@@ -344,8 +344,8 @@ const App = () => {
   };
 
   const detailSectionComponents = {
-    versusRevise: TechDetailSectionVersusRevise,
-    hanabi: TechDetailSectionHanabi,
+    versusRevise: VersusReviseTechInterventionSection,
+    hanabi: ShinHanabiTechInterventionSection,
     lHanabi: TechDetailSectionLHanabi,
     other: TechDetailSectionOther
   };
