@@ -276,10 +276,13 @@ const App = () => {
         // 編集モード - Firebase を更新
         const recordToUpdate = records[editingIndex];
         await updateRecord(recordToUpdate.id, recordData);
-        setActiveTab(previousTab);
       } else {
         // 新規作成モード - Firebase に追加
         await createRecord(recordData);
+      }
+
+      if (activeTab === 'form') {
+        setActiveTab(previousTab || 'dashboard');
       }
       
       setEditingIndex(null);
@@ -305,7 +308,6 @@ const App = () => {
     setFormData(records[recordIndex]);
     setEditingIndex(recordIndex);
     setShowForm(true);
-    setActiveTab('form');
   };
 
   const openNewRecordForm = () => {
@@ -323,7 +325,9 @@ const App = () => {
   const cancelEdit = () => {
     setEditingIndex(null);
     setShowForm(false);
-    setActiveTab(previousTab);
+    if (activeTab === 'form') {
+      setActiveTab(previousTab || 'dashboard');
+    }
     setFormData(prev => ({
       ...prev, 
       totalGames: '', bigCount: '', regCount: '', investment: '', recovery: '', 
