@@ -15,6 +15,8 @@ describe('machineConfig rules', () => {
   });
 
   it('keeps all options resolvable', () => {
+    expect(MACHINE_OPTIONS).toContain('テスト');
+
     for (const machineName of MACHINE_OPTIONS) {
       expect(getMachineConfig(machineName)).toEqual(MACHINE_CONFIG[machineName]);
     }

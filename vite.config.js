@@ -7,6 +7,6 @@ export default defineConfig(({ mode }) => ({
   base: mode === 'production' ? '/slo-report/' : '/',
   test: {
     environment: 'node',
-    include: ['src/**/*.test.js']
+    include: ['src/**/*.test.js', 'src/**/*.test.jsx']
   }
 }))

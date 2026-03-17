@@ -56,6 +56,20 @@ export const MACHINE_CONFIG = {
       right: true
     }
   },
+  'テスト': {
+    machineSection: 'other',
+    detailVariant: 'other',
+    regMax: 0,
+    techLossPerMiss: 10,
+    watermelonLoss: 15,
+    cherryLoss: 4,
+    watermelonName: '小役',
+    cherryName: '小役',
+    detailFields: {
+      mid: false,
+      right: false
+    }
+  },
   [FALLBACK_MACHINE]: {
     machineSection: 'other',
     detailVariant: 'other',

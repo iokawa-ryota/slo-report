@@ -9,14 +9,58 @@ import {
   serverTimestamp,
   orderBy
 } from 'firebase/firestore';
-import { db, auth } from './config';
+import { db, auth, isFirebaseConfigured } from './config';
+import { getCurrentUser } from './auth';
+
+const LOCAL_RECORDS_KEY = 'pachislo-records-v9';
+const LOCAL_RECORDS_EVENT = 'local-records-updated';
+
+const isLocalMode = () => {
+  const user = getCurrentUser();
+  return !isFirebaseConfigured || !db || !auth || !user || !user.email;
+};
+
+const readLocalRecords = () => {
+  try {
+    const raw = localStorage.getItem(LOCAL_RECORDS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error('Failed to read local records:', error);
+    return [];
+  }
+};
+
+const writeLocalRecords = (records) => {
+  localStorage.setItem(LOCAL_RECORDS_KEY, JSON.stringify(records));
+  window.dispatchEvent(new CustomEvent(LOCAL_RECORDS_EVENT, { detail: records }));
+};
+
+const sortRecordsByDateDesc = (records) => (
+  [...records].sort((a, b) => {
+    const dateDiff = String(b.date || '').localeCompare(String(a.date || ''));
+    if (dateDiff !== 0) return dateDiff;
+    return String(b.createdAt || '').localeCompare(String(a.createdAt || ''));
+  })
+);
+
+const makeLocalRecord = (recordData, existingId) => {
+  const timestamp = new Date().toISOString();
+  return {
+    ...recordData,
+    id: existingId || `local-${crypto.randomUUID()}`,
+    createdAt: recordData.createdAt || timestamp,
+    updatedAt: timestamp
+  };
+};
 
 /**
  * ユーザーのメールアドレスを取得（providerData から確実に取得）
  * @returns {string|null} メールアドレス
  */
 const getUserEmail = () => {
-  const user = auth.currentUser;
+  const user = getCurrentUser();
   if (!user) return null;
   
   // 優先順位: user.email → providerData から Google プロバイダ → null
@@ -41,7 +85,7 @@ const getEmailLocalPart = (email) => {
  * @returns {string} ユーザー識別子
  */
 const getCurrentUserIdentifier = () => {
-  if (!auth.currentUser) {
+  if (!getCurrentUser()) {
     throw new Error('User not authenticated');
   }
   const email = getUserEmail();
@@ -66,9 +110,25 @@ const getUserRecordsCollection = (userIdentifier) => {
  * @returns {Function} リスナー削除関数
  */
 export const subscribeToRecords = (callback) => {
-  if (!auth.currentUser) {
-    console.warn('User not authenticated');
-    return () => {};
+  if (isLocalMode()) {
+    callback(sortRecordsByDateDesc(readLocalRecords()));
+
+    const handleStorage = (event) => {
+      if (event.key === LOCAL_RECORDS_KEY) {
+        callback(sortRecordsByDateDesc(readLocalRecords()));
+      }
+    };
+    const handleLocalRecordsUpdated = (event) => {
+      const nextRecords = event.detail || readLocalRecords();
+      callback(sortRecordsByDateDesc(nextRecords));
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener(LOCAL_RECORDS_EVENT, handleLocalRecordsUpdated);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener(LOCAL_RECORDS_EVENT, handleLocalRecordsUpdated);
+    };
   }
 
   const userIdentifier = getCurrentUserIdentifier();
@@ -96,8 +156,11 @@ export const subscribeToRecords = (callback) => {
  * @returns {Promise<string>} 作成されたドキュメントID
  */
 export const createRecord = async (recordData) => {
-  if (!auth.currentUser) {
-    throw new Error('User not authenticated');
+  if (isLocalMode()) {
+    const nextRecord = makeLocalRecord(recordData);
+    const records = sortRecordsByDateDesc([...readLocalRecords(), nextRecord]);
+    writeLocalRecords(records);
+    return nextRecord.id;
   }
 
   const userIdentifier = getCurrentUserIdentifier();
@@ -116,8 +179,13 @@ export const createRecord = async (recordData) => {
  * @param {Object} recordData - 更新するデータ
  */
 export const updateRecord = async (recordId, recordData) => {
-  if (!auth.currentUser) {
-    throw new Error('User not authenticated');
+  if (isLocalMode()) {
+    const records = readLocalRecords();
+    const updatedRecords = sortRecordsByDateDesc(records.map((record) => (
+      record.id === recordId ? makeLocalRecord({ ...record, ...recordData }, recordId) : record
+    )));
+    writeLocalRecords(updatedRecords);
+    return;
   }
 
   const userIdentifier = getCurrentUserIdentifier();
@@ -133,8 +201,9 @@ export const updateRecord = async (recordId, recordData) => {
  * @param {string} recordId - 記録ID
  */
 export const deleteRecord = async (recordId) => {
-  if (!auth.currentUser) {
-    throw new Error('User not authenticated');
+  if (isLocalMode()) {
+    writeLocalRecords(readLocalRecords().filter((record) => record.id !== recordId));
+    return;
   }
 
   const userIdentifier = getCurrentUserIdentifier();
@@ -146,8 +215,11 @@ export const deleteRecord = async (recordId) => {
  * @param {Array} records - 移行するレコード配列
  */
 export const migrateFromLocalStorage = async (records) => {
-  if (!auth.currentUser) {
-    throw new Error('User not authenticated');
+  if (isLocalMode()) {
+    const localRecords = readLocalRecords();
+    const normalizedRecords = records.map((record) => makeLocalRecord(record, record.id));
+    writeLocalRecords(sortRecordsByDateDesc([...localRecords, ...normalizedRecords]));
+    return normalizedRecords.map((record) => record.id);
   }
 
   const migratedIds = [];

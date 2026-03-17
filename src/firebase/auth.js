@@ -5,13 +5,23 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
-import { auth } from './config';
+import { auth, isFirebaseConfigured } from './config';
+
+const LOCAL_ANONYMOUS_USER = {
+  uid: 'local-anonymous-user',
+  email: null,
+  displayName: 'ローカルユーザー',
+  isAnonymous: true
+};
 
 /**
  * 匿名ユーザーとしてログイン
  * @returns {Promise<void>}
  */
 export const loginAnonymously = async () => {
+  if (!isFirebaseConfigured || !auth) {
+    return LOCAL_ANONYMOUS_USER;
+  }
   try {
     await signInAnonymously(auth);
     console.log('Anonymous user logged in');
@@ -27,6 +37,11 @@ export const loginAnonymously = async () => {
  * @returns {Function} リスナー削除関数
  */
 export const subscribeToAuthState = (callback) => {
+  if (!isFirebaseConfigured || !auth) {
+    callback(LOCAL_ANONYMOUS_USER);
+    return () => {};
+  }
+
   return onAuthStateChanged(auth, (user) => {
     if (user) {
       console.log('✅ User authenticated:', {
@@ -47,6 +62,9 @@ export const subscribeToAuthState = (callback) => {
  * @returns {Promise<void>}
  */
 export const logout = async () => {
+  if (!isFirebaseConfigured || !auth) {
+    return;
+  }
   try {
     await signOut(auth);
     console.log('User logged out');
@@ -61,6 +79,9 @@ export const logout = async () => {
  * @returns {Object|null}
  */
 export const getCurrentUser = () => {
+  if (!isFirebaseConfigured || !auth) {
+    return LOCAL_ANONYMOUS_USER;
+  }
   return auth.currentUser;
 };
 
@@ -69,6 +90,9 @@ export const getCurrentUser = () => {
  * @returns {Promise<void>}
  */
 export const signInWithGoogle = async () => {
+  if (!isFirebaseConfigured || !auth) {
+    throw new Error('Firebase is not configured');
+  }
   try {
     const provider = new GoogleAuthProvider();
     await signInWithPopup(auth, provider);

@@ -97,7 +97,7 @@ const DataBox = ({ label, value, color = 'text-slate-600' }) => (
   </div>
 );
 
-export const RecordItem = ({ record, recordIndex, onDelete, onEdit }) => (
+export const RecordItem = ({ record, onDelete, onEdit }) => (
   <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 group hover:border-indigo-200 transition-all text-left">
     <div className="flex justify-between items-start mb-3">
       <div className="flex items-center gap-3">
@@ -117,7 +117,7 @@ export const RecordItem = ({ record, recordIndex, onDelete, onEdit }) => (
         </div>
       </div>
       <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100">
-        <button onClick={() => onEdit(recordIndex)} className="text-indigo-500 hover:text-indigo-700 transition-colors px-2 py-1 font-bold text-[11px]">編集</button>
+        <button onClick={() => onEdit(record.id)} className="text-indigo-500 hover:text-indigo-700 transition-colors px-2 py-1 font-bold text-[11px]">編集</button>
         <button onClick={() => onDelete(record.id)} className="text-slate-200 hover:text-rose-500 transition-colors px-2 py-1"><Trash2 size={16} /></button>
       </div>
     </div>
@@ -270,6 +270,7 @@ export const InvestmentRecoverySection = ({ formData, handleInputChange }) => (
         ].map(rate => (
           <button
             key={rate.value}
+            type="button"
             onClick={() => handleInputChange({ target: { name: 'lendingRate', value: rate.value } })}
             className={`px-2 py-2.5 rounded-lg font-semibold text-xs sm:text-sm whitespace-nowrap transition-all ${
               formData.lendingRate === rate.value
@@ -318,7 +319,7 @@ export const RecentHistorySection = ({ records, onEdit }) => {
           return (
             <div key={index} className="p-3 bg-white rounded-lg border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all group">
               <div className="flex items-center justify-between">
-                <div className="flex-1 cursor-pointer" onClick={() => onEdit(index)}>
+                <div className="flex-1 cursor-pointer" onClick={() => onEdit(record.id)}>
                   <p className="text-[11px] font-bold text-slate-700">{record.date} - {record.machineName}</p>
                   <p className="text-[10px] text-slate-500 mt-1">
                     投資: {record.investment}{record.investmentUnit} / 回収: {record.recovery}{record.recoveryUnit}
@@ -335,7 +336,7 @@ export const RecentHistorySection = ({ records, onEdit }) => {
                   </div>
                   <button
                     type="button"
-                    onClick={() => onEdit(index)}
+                    onClick={() => onEdit(record.id)}
                     className="p-2 bg-indigo-100 text-indigo-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold hover:bg-indigo-200 whitespace-nowrap"
                   >
                     編集

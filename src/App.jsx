@@ -14,6 +14,7 @@ import { MACHINE_OPTIONS, getMachineConfig } from './config/machineConfig';
 import { calculateInputStats, calculateLoss } from './utils/recordCalculations';
 import { subscribeToRecords, createRecord, updateRecord, deleteRecord as deleteRecordFromDb, migrateFromLocalStorage } from './firebase/db';
 import { loginAnonymously, subscribeToAuthState, logout, signInWithGoogle } from './firebase/auth';
+import { isFirebaseConfigured } from './firebase/config';
 import {
   ChartSection,
   NavItem,
@@ -46,7 +47,7 @@ const App = () => {
         setUser(currentUser);
         // ローカルストレージからのデータ移行をチェック
         const localData = localStorage.getItem('pachislo-records-v8');
-        if (localData && !hasMigratedData) {
+        if (localData && !hasMigratedData && isFirebaseConfigured) {
           try {
             const records = JSON.parse(localData);
             if (records.length > 0) {
@@ -70,13 +71,9 @@ const App = () => {
 
   // Firebase からのレコード購読（Googleサインイン済みユーザーのみ）
   useEffect(() => {
-    if (user && user.email) {
-      // Googleサインイン済み（email が存在する）のみ購読
+    if (user) {
       const unsubscribe = subscribeToRecords(setRecords);
       return unsubscribe;
-    } else if (user && !user.email) {
-      // 匿名ユーザーの場合は購読しない
-      setRecords([]);
     }
   }, [user]);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -299,10 +296,13 @@ const App = () => {
     }
   };
 
-  const loadRecordForEdit = (index) => {
+  const loadRecordForEdit = (recordId) => {
+    const recordIndex = records.findIndex((record) => record.id === recordId);
+    if (recordIndex === -1) return;
+
     setPreviousTab(activeTab);
-    setFormData(records[index]);
-    setEditingIndex(index);
+    setFormData(records[recordIndex]);
+    setEditingIndex(recordIndex);
     setShowForm(true);
     setActiveTab('form');
   };
@@ -364,7 +364,7 @@ const App = () => {
         </div>
       )}
 
-      {!isLoading && !user && (
+      {!isLoading && !user && isFirebaseConfigured && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm">
             <div className="mb-6">
@@ -441,15 +441,17 @@ const App = () => {
 
           <div className="pt-6 border-t border-slate-800 space-y-3">
             <div className="text-[10px] text-slate-500 font-bold text-center pb-3">
-              v9.0.0 - Firebase Sync
+              {isFirebaseConfigured ? 'v9.0.0 - Firebase Sync' : 'v9.0.0 - Local Save Mode'}
             </div>
-            <button
-              onClick={() => logout()}
-              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-slate-300 text-xs font-semibold"
-            >
-              <LogOut size={14} />
-              ログアウト
-            </button>
+            {isFirebaseConfigured && (
+              <button
+                onClick={() => logout()}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-slate-300 text-xs font-semibold"
+              >
+                <LogOut size={14} />
+                ログアウト
+              </button>
+            )}
           </div>
         </div>
       </aside>
@@ -553,7 +555,7 @@ const App = () => {
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8">
               <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                <h2 className="text-lg font-black text-slate-800 flex items-center gap-2"><PlusCircle className="text-indigo-600"/> 新規実践記録</h2>
+                <h2 className="text-lg font-black text-slate-800 flex items-center gap-2"><PlusCircle className="text-indigo-600"/> {editingIndex !== null ? '実践記録を編集' : '新規実践記録'}</h2>
                 <button onClick={cancelEdit} className="p-2 text-slate-400 hover:text-slate-600"><X/></button>
               </div>
               <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto text-left">
