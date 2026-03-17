@@ -105,6 +105,9 @@ vi.mock('./firebase/auth', () => ({
 const { createRecordMock } = vi.hoisted(() => ({
   createRecordMock: vi.fn()
 }));
+const updateRecordMock = vi.hoisted(() => ({
+  updateRecordMock: vi.fn()
+}));
 
 vi.mock('./firebase/db', () => ({
   subscribeToRecords: (callback) => {
@@ -112,7 +115,7 @@ vi.mock('./firebase/db', () => ({
     return () => {};
   },
   createRecord: createRecordMock,
-  updateRecord: vi.fn(),
+  updateRecord: updateRecordMock.updateRecordMock,
   deleteRecord: vi.fn(),
   migrateFromLocalStorage: vi.fn()
 }));
@@ -143,6 +146,20 @@ describe('App', () => {
 
     expect(screen.getByRole('button', { name: '記録を保存する' })).toBeInTheDocument();
     expect(createRecordMock).not.toHaveBeenCalled();
+  });
+
+  it('returns to the previous screen after saving from recent history edit', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: '編集' })[0]);
+    await user.clear(screen.getByDisplayValue('older'));
+    await user.type(screen.getByRole('textbox'), 'edited-from-history');
+    await user.click(screen.getByRole('button', { name: '修正を保存' }));
+
+    expect(updateRecordMock.updateRecordMock).toHaveBeenCalled();
+    expect((await screen.findAllByText('全機種 累計収支')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('直近5件の履歴').length).toBeGreaterThan(0);
   });
 
 });

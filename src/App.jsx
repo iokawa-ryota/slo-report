@@ -276,6 +276,7 @@ const App = () => {
         // 編集モード - Firebase を更新
         const recordToUpdate = records[editingIndex];
         await updateRecord(recordToUpdate.id, recordData);
+        setActiveTab(previousTab);
       } else {
         // 新規作成モード - Firebase に追加
         await createRecord(recordData);
