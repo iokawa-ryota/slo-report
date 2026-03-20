@@ -235,7 +235,7 @@ export const RecordItem = ({ record, onDelete, onEdit }) => (
           <div className="text-[9px] font-bold text-slate-400 flex items-center gap-1"><Calendar size={10} /> {record.date}</div>
         </div>
       </div>
-      <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100">
+      <div className="flex gap-2 opacity-100">
         <button
           type="button"
           onClick={() => onEdit(record.id)}
@@ -470,7 +470,7 @@ export const RecentHistorySection = ({ records, onEdit, onDelete }) => {
                   <button
                     type="button"
                     onClick={() => onEdit(record.id)}
-                    className="p-2 bg-indigo-100 text-indigo-600 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-indigo-200"
+                    className="p-2 bg-indigo-100 text-indigo-600 rounded-lg transition-colors hover:bg-indigo-200"
                     aria-label={`直近履歴を編集: ${record.date} ${record.machineName}`}
                   >
                     <Pencil size={16} />
