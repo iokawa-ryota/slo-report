@@ -239,7 +239,7 @@ export const RecordItem = ({ record, onDelete, onEdit }) => (
         <button
           type="button"
           onClick={() => onEdit(record.id)}
-          className="text-indigo-500 hover:text-indigo-700 transition-colors px-2 py-1"
+          className="text-slate-900 hover:text-slate-700 transition-colors px-2 py-1"
           aria-label={`履歴を編集: ${record.date} ${record.machineName}`}
         >
           <Pencil size={16} />
@@ -470,7 +470,7 @@ export const RecentHistorySection = ({ records, onEdit, onDelete }) => {
                   <button
                     type="button"
                     onClick={() => onEdit(record.id)}
-                    className="p-2 bg-indigo-100 text-indigo-600 rounded-lg transition-colors hover:bg-indigo-200"
+                    className="p-2 text-slate-900 hover:text-slate-700 transition-colors"
                     aria-label={`直近履歴を編集: ${record.date} ${record.machineName}`}
                   >
                     <Pencil size={16} />
