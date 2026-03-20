@@ -33,6 +33,33 @@ import {
 } from './components/AppSections';
 
 const DEFAULT_DETAIL_FIELDS = { mid: true, right: true };
+const createInitialFormData = () => ({
+  date: new Date().toISOString().split('T')[0],
+  machineName: MACHINE_OPTIONS[0],
+  totalGames: '',
+  bigCount: '',
+  regCount: '',
+  startTotalGames: '0',
+  startBigCount: '0',
+  startRegCount: '0',
+  investment: '',
+  investmentUnit: '円',
+  recovery: '',
+  recoveryUnit: '枚',
+  lendingRate: '20',
+  exchangeRate: '50',
+  techMissCount: '',
+  techAttemptCount: '',
+  midSuccess: '',
+  midNotWatermelon: '',
+  midMiss: '',
+  rightSuccess: '',
+  rightMiss: '',
+  watermelonLossCount: '0',
+  cherryLossCount: '0',
+  otherLossCount: '0',
+  memo: ''
+});
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -84,37 +111,11 @@ const App = () => {
   const [calcMode, setCalcMode] = useState('detail'); 
   const [isMidStart, setIsMidStart] = useState(false); 
   const [lossChartType, setLossChartType] = useState('bar');
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [editingRecordId, setEditingRecordId] = useState(null);
   const [dateRangeStart, setDateRangeStart] = useState('');
   const [dateRangeEnd, setDateRangeEnd] = useState(''); 
 
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
-    machineName: MACHINE_OPTIONS[0],
-    totalGames: '',
-    bigCount: '',
-    regCount: '',
-    startTotalGames: '0',
-    startBigCount: '0',
-    startRegCount: '0',
-    investment: '',
-    investmentUnit: '円',
-    recovery: '',
-    recoveryUnit: '枚',
-    lendingRate: '20',
-    exchangeRate: '50',
-    techMissCount: '', 
-    techAttemptCount: '',
-    midSuccess: '',
-    midNotWatermelon: '',
-    midMiss: '',
-    rightSuccess: '',
-    rightMiss: '',
-    watermelonLossCount: '0',
-    cherryLossCount: '0',
-    otherLossCount: '0',
-    memo: ''
-  });
+  const [formData, setFormData] = useState(createInitialFormData);
 
   const currentConfig = getMachineConfig(formData.machineName);
   const detailFields = currentConfig.detailFields || DEFAULT_DETAIL_FIELDS;
@@ -272,25 +273,18 @@ const App = () => {
     };
 
     try {
-      if (editingIndex !== null) {
+      if (editingRecordId !== null) {
         // 編集モード - Firebase を更新
-        const recordToUpdate = records[editingIndex];
-        await updateRecord(recordToUpdate.id, recordData);
+        await updateRecord(editingRecordId, recordData);
         setActiveTab(previousTab);
       } else {
         // 新規作成モード - Firebase に追加
         await createRecord(recordData);
       }
       
-      setEditingIndex(null);
+      setEditingRecordId(null);
       setShowForm(false);
-      setFormData(prev => ({
-        ...prev, 
-        totalGames: '', bigCount: '', regCount: '', investment: '', recovery: '', 
-        techMissCount: '', techAttemptCount: '', 
-        midSuccess: '', midNotWatermelon: '', midMiss: '', rightSuccess: '', rightMiss: '',
-        watermelonLossCount: '0', cherryLossCount: '0', otherLossCount: '0', memo: ''
-      }));
+      setFormData(createInitialFormData());
     } catch (error) {
       console.error('Error saving record:', error);
       alert('レコードの保存に失敗しました');
@@ -298,39 +292,36 @@ const App = () => {
   };
 
   const loadRecordForEdit = (recordId) => {
-    const recordIndex = records.findIndex((record) => record.id === recordId);
-    if (recordIndex === -1) return;
+    if (editingRecordId === recordId && !showForm) {
+      setShowForm(true);
+      setActiveTab('form');
+      return;
+    }
+
+    const recordToEdit = records.find((record) => record.id === recordId);
+    if (!recordToEdit) return;
 
     setPreviousTab(activeTab);
-    setFormData(records[recordIndex]);
-    setEditingIndex(recordIndex);
+    setFormData(recordToEdit);
+    setEditingRecordId(recordId);
     setShowForm(true);
     setActiveTab('form');
   };
 
   const openNewRecordForm = () => {
-    setEditingIndex(null);
-    setFormData(prev => ({
-      ...prev, 
-      totalGames: '', bigCount: '', regCount: '', investment: '', recovery: '', 
-      techMissCount: '', techAttemptCount: '', 
-      midSuccess: '', midNotWatermelon: '', midMiss: '', rightSuccess: '', rightMiss: '',
-      watermelonLossCount: '0', cherryLossCount: '0', otherLossCount: '0', memo: ''
-    }));
+    setEditingRecordId(null);
+    setFormData(createInitialFormData());
     setShowForm(true);
+    setActiveTab('form');
   };
 
   const cancelEdit = () => {
-    setEditingIndex(null);
     setShowForm(false);
     setActiveTab(previousTab);
-    setFormData(prev => ({
-      ...prev, 
-      totalGames: '', bigCount: '', regCount: '', investment: '', recovery: '', 
-      techMissCount: '', techAttemptCount: '', 
-      midSuccess: '', midNotWatermelon: '', midMiss: '', rightSuccess: '', rightMiss: '',
-      watermelonLossCount: '0', cherryLossCount: '0', otherLossCount: '0', memo: ''
-    }));
+
+    if (editingRecordId === null) {
+      setFormData(createInitialFormData());
+    }
   };
 
   const deleteRecord = async (id) => {
@@ -458,7 +449,7 @@ const App = () => {
       </aside>
 
       <main className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden">
-        <header className="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center sticky top-0 z-30">
+        <header className="fixed top-0 left-0 right-0 lg:left-64 bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center z-30">
           <div className="flex items-center gap-4">
             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
               <Menu size={24} />
@@ -477,7 +468,7 @@ const App = () => {
           </button>
         </header>
 
-        <div className="p-6 md:p-8 max-w-6xl mx-auto w-full">
+        <div className="pt-20 p-6 md:p-8 max-w-6xl mx-auto w-full">
           <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-3">期間フィルター</div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -549,8 +540,7 @@ const App = () => {
             <div className="space-y-4 mt-4 text-left">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{activeTab === 'history' ? '全履歴' : `${selectedMachineTab} の履歴`}</h3>
               {(activeTab === 'history' ? filterRecordsByDateRange(records) : machineSpecificData.records).map((r) => {
-                const actualIndex = records.indexOf(r);
-                return <RecordItem key={r.id} record={r} recordIndex={actualIndex} onDelete={deleteRecord} onEdit={loadRecordForEdit} />;
+                return <RecordItem key={r.id} record={r} onDelete={deleteRecord} onEdit={loadRecordForEdit} />;
               })}
             </div>
           )}
@@ -560,8 +550,8 @@ const App = () => {
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
             <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8">
               <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                <h2 className="text-lg font-black text-slate-800 flex items-center gap-2"><PlusCircle className="text-indigo-600"/> {editingIndex !== null ? '実践記録を編集' : '新規実践記録'}</h2>
-                <button onClick={cancelEdit} className="p-2 text-slate-400 hover:text-slate-600"><X/></button>
+                <h2 className="text-lg font-black text-slate-800 flex items-center gap-2"><PlusCircle className="text-indigo-600"/> {editingRecordId !== null ? '実践記録を編集' : '新規実践記録'}</h2>
+                <button type="button" aria-label="フォームを閉じる" onClick={cancelEdit} className="p-2 text-slate-400 hover:text-slate-600"><X/></button>
               </div>
               <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto text-left">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -628,9 +618,9 @@ const App = () => {
 
                 <div className="flex gap-3">
                   <button type="submit" className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all uppercase tracking-widest text-sm">
-                    {editingIndex !== null ? '修正を保存' : '記録を保存する'}
+                    {editingRecordId !== null ? '修正を保存' : '記録を保存する'}
                   </button>
-                  {editingIndex !== null && (
+                  {editingRecordId !== null && (
                     <button type="button" onClick={cancelEdit} className="px-6 py-4 bg-slate-200 text-slate-700 rounded-2xl font-black hover:bg-slate-300 transition-all text-sm">
                       キャンセル
                     </button>

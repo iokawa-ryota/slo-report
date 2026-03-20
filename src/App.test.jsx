@@ -5,6 +5,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+const getActiveMemoField = () => screen.getAllByRole('textbox').at(-1);
+
 const mockRecords = [
   {
     id: 'record-1',
@@ -72,22 +74,6 @@ const mockRecords = [
   }
 ];
 
-vi.mock('recharts', () => {
-  const MockChart = ({ children }) => <div>{children}</div>;
-  return {
-    ResponsiveContainer: ({ children }) => <div>{children}</div>,
-    LineChart: MockChart,
-    Line: () => null,
-    BarChart: MockChart,
-    Bar: () => null,
-    XAxis: () => null,
-    YAxis: () => null,
-    CartesianGrid: () => null,
-    Tooltip: () => null,
-    ReferenceLine: () => null
-  };
-});
-
 vi.mock('./firebase/config', () => ({
   isFirebaseConfigured: false
 }));
@@ -138,6 +124,8 @@ describe('App', () => {
     expect(await screen.findByRole('button', { name: '総合ダッシュボード' })).toBeInTheDocument();
     expect(screen.queryByText('Google でサインイン')).not.toBeInTheDocument();
     expect(screen.getByText('v9.0.0 - Local Save Mode')).toBeInTheDocument();
+    expect(document.querySelector('header')).toHaveClass('fixed', 'top-0', 'left-0', 'right-0');
+    expect(document.querySelector('main > div')).toHaveClass('pt-20');
   });
 
   it('does not submit the form when changing the lending rate', async () => {
@@ -156,14 +144,30 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
-    await user.click(screen.getAllByRole('button', { name: '編集' })[0]);
+    await user.click(screen.getAllByLabelText('直近履歴を編集: 2026-03-01 バーサスリヴァイズ')[0]);
     await user.clear(screen.getByDisplayValue('older'));
-    await user.type(screen.getByRole('textbox'), 'edited-from-history');
+    await user.type(getActiveMemoField(), 'edited-from-history');
     await user.click(screen.getByRole('button', { name: '修正を保存' }));
 
     expect(updateRecordMock.updateRecordMock).toHaveBeenCalled();
     expect((await screen.findAllByText('全機種 累計収支')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('直近5件の履歴').length).toBeGreaterThan(0);
+  });
+
+  it('keeps unsaved edit content when closing the edit form with x', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByLabelText('直近履歴を編集: 2026-03-01 バーサスリヴァイズ')[0]);
+    const memoField = getActiveMemoField();
+    await user.clear(memoField);
+    await user.type(memoField, 'draft-kept-after-close');
+
+    await user.click(screen.getAllByRole('button', { name: 'フォームを閉じる' }).at(-1));
+    expect(screen.queryAllByRole('heading', { name: '実践記録を編集' })).toHaveLength(0);
+
+    await user.click(screen.getAllByLabelText('直近履歴を編集: 2026-03-01 バーサスリヴァイズ')[0]);
+    expect(getActiveMemoField()).toHaveValue('draft-kept-after-close');
   });
 
   it('deletes a record from recent history', async () => {

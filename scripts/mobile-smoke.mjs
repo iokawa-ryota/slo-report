@@ -83,7 +83,7 @@ async function run() {
 
     await page.locator('input[type="date"]').nth(0).fill('2026-03-05');
     await page.waitForTimeout(300);
-    await page.getByRole('button', { name: '編集' }).first().click();
+    await page.getByLabel('直近履歴を編集: 2026-03-10 テスト').first().click();
     await expectVisible(page.getByRole('heading', { name: '実践記録を編集' }), '編集モーダルが開きませんでした');
     await expectNoHorizontalOverflow(page, 'form', '編集フォームのモバイル表示で横スクロールが発生しています');
 

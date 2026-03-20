@@ -1,17 +1,163 @@
 import React from 'react';
-import { Trash2, Calculator, History, TrendingUp, LineChart as LineChartIcon, BarChart as BarChartIcon, Calendar } from 'lucide-react';
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine
-} from 'recharts';
+import { Trash2, Calculator, History, TrendingUp, LineChart as LineChartIcon, BarChart as BarChartIcon, Calendar, Pencil } from 'lucide-react';
+
+const CHART_WIDTH = 520;
+const CHART_HEIGHT = 240;
+const CHART_PADDING = { top: 16, right: 16, bottom: 30, left: 40 };
+
+const formatChartValue = (value) => Number(value || 0).toLocaleString();
+
+const getChartBounds = (values) => {
+  if (values.length === 0) {
+    return { min: 0, max: 1 };
+  }
+
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+
+  if (minValue === maxValue) {
+    const padding = Math.max(1, Math.abs(minValue) * 0.1);
+    return { min: minValue - padding, max: maxValue + padding };
+  }
+
+  return { min: minValue, max: maxValue };
+};
+
+const getX = (index, count) => {
+  const usableWidth = CHART_WIDTH - CHART_PADDING.left - CHART_PADDING.right;
+  if (count <= 1) {
+    return CHART_PADDING.left + usableWidth / 2;
+  }
+
+  return CHART_PADDING.left + (usableWidth * index) / (count - 1);
+};
+
+const getY = (value, min, max) => {
+  const usableHeight = CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom;
+  if (max === min) {
+    return CHART_PADDING.top + usableHeight / 2;
+  }
+
+  const ratio = (value - min) / (max - min);
+  return CHART_HEIGHT - CHART_PADDING.bottom - ratio * usableHeight;
+};
+
+const getTicks = (min, max, steps = 4) => (
+  Array.from({ length: steps + 1 }, (_, index) => min + ((max - min) * index) / steps)
+);
+
+const EmptyChart = ({ label }) => (
+  <div className="h-64 w-full flex items-center justify-center text-sm font-semibold text-slate-400">
+    {label}
+  </div>
+);
+
+const LineMiniChart = ({ data, dataKey, stroke, fillLabel, showZeroLine = false }) => {
+  if (data.length === 0) {
+    return <EmptyChart label="データがまだありません" />;
+  }
+
+  const values = data.map((item) => Number(item[dataKey] || 0));
+  const { min, max } = getChartBounds(showZeroLine ? [...values, 0] : values);
+  const ticks = getTicks(min, max);
+  const points = data.map((item, index) => ({
+    x: getX(index, data.length),
+    y: getY(Number(item[dataKey] || 0), min, max),
+    label: item.displayDate,
+    value: Number(item[dataKey] || 0)
+  }));
+  const pathD = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`).join(' ');
+  const zeroY = showZeroLine && min <= 0 && max >= 0 ? getY(0, min, max) : null;
+
+  return (
+    <div className="h-64 w-full">
+      <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} className="h-full w-full" role="img" aria-label={fillLabel}>
+        {ticks.map((tick) => {
+          const y = getY(tick, min, max);
+          return (
+            <g key={tick}>
+              <line x1={CHART_PADDING.left} y1={y} x2={CHART_WIDTH - CHART_PADDING.right} y2={y} stroke="#e2e8f0" strokeDasharray="4 4" />
+              <text x={CHART_PADDING.left - 8} y={y + 4} textAnchor="end" fontSize="10" fill="#94a3b8">
+                {formatChartValue(Math.round(tick))}
+              </text>
+            </g>
+          );
+        })}
+        {zeroY !== null && (
+          <line x1={CHART_PADDING.left} y1={zeroY} x2={CHART_WIDTH - CHART_PADDING.right} y2={zeroY} stroke="#cbd5e1" />
+        )}
+        {points.map((point) => (
+          <text key={`${point.label}-x`} x={point.x} y={CHART_HEIGHT - 8} textAnchor="middle" fontSize="10" fill="#94a3b8">
+            {point.label}
+          </text>
+        ))}
+        <path d={pathD} fill="none" stroke={stroke} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+        {points.map((point) => (
+          <g key={`${point.label}-${point.value}`}>
+            <circle cx={point.x} cy={point.y} r="4" fill={stroke} />
+            <title>{`${point.label}: ${formatChartValue(point.value)}`}</title>
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
+};
+
+const BarMiniChart = ({ data, dataKey, fill, label }) => {
+  if (data.length === 0) {
+    return <EmptyChart label="データがまだありません" />;
+  }
+
+  const values = data.map((item) => Number(item[dataKey] || 0));
+  const max = Math.max(...values, 1);
+  const min = 0;
+  const ticks = getTicks(min, max);
+  const usableWidth = CHART_WIDTH - CHART_PADDING.left - CHART_PADDING.right;
+  const barSlot = usableWidth / data.length;
+  const barWidth = Math.max(14, barSlot * 0.56);
+
+  return (
+    <div className="h-64 w-full">
+      <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} className="h-full w-full" role="img" aria-label={label}>
+        {ticks.map((tick) => {
+          const y = getY(tick, min, max);
+          return (
+            <g key={tick}>
+              <line x1={CHART_PADDING.left} y1={y} x2={CHART_WIDTH - CHART_PADDING.right} y2={y} stroke="#e2e8f0" strokeDasharray="4 4" />
+              <text x={CHART_PADDING.left - 8} y={y + 4} textAnchor="end" fontSize="10" fill="#94a3b8">
+                {formatChartValue(Math.round(tick))}
+              </text>
+            </g>
+          );
+        })}
+        {data.map((item, index) => {
+          const value = Number(item[dataKey] || 0);
+          const xCenter = getX(index, data.length);
+          const y = getY(value, min, max);
+          const baseY = getY(0, min, max);
+          const height = Math.max(0, baseY - y);
+
+          return (
+            <g key={`${item.displayDate}-${index}`}>
+              <rect
+                x={xCenter - barWidth / 2}
+                y={y}
+                width={barWidth}
+                height={height}
+                rx="6"
+                fill={fill}
+              />
+              <text x={xCenter} y={CHART_HEIGHT - 8} textAnchor="middle" fontSize="10" fill="#94a3b8">
+                {item.displayDate}
+              </text>
+              <title>{`${item.displayDate}: ${formatChartValue(value)}`}</title>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+};
 
 export const ChartSection = ({ data, lossType, setLossType }) => (
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -19,18 +165,7 @@ export const ChartSection = ({ data, lossType, setLossType }) => (
       <h3 className="text-xs font-black text-slate-400 uppercase mb-4 flex items-center gap-2">
         <TrendingUp size={16} className="text-emerald-500" /> 累計差枚推移 (枚)
       </h3>
-      <div className="h-64 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-            <XAxis dataKey="displayDate" fontSize={10} tickLine={false} axisLine={false} />
-            <YAxis fontSize={10} tickLine={false} axisLine={false} />
-            <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-            <ReferenceLine y={0} stroke="#cbd5e1" />
-            <Line type="monotone" dataKey="cumulative" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981' }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      <LineMiniChart data={data} dataKey="cumulative" stroke="#10b981" fillLabel="累計差枚推移グラフ" showZeroLine />
     </div>
     <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
       <div className="flex justify-between items-center mb-4">
@@ -45,27 +180,11 @@ export const ChartSection = ({ data, lossType, setLossType }) => (
           ))}
         </div>
       </div>
-      <div className="h-64 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          {lossType === 'bar' ? (
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="displayDate" fontSize={10} tickLine={false} axisLine={false} />
-              <YAxis fontSize={10} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-              <Bar dataKey="loss" fill="#f43f5e" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          ) : (
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="displayDate" fontSize={10} tickLine={false} axisLine={false} />
-              <YAxis fontSize={10} tickLine={false} axisLine={false} />
-              <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
-              <Line type="monotone" dataKey="loss" stroke="#f43f5e" strokeWidth={3} dot={{ r: 4, fill: '#f43f5e' }} />
-            </LineChart>
-          )}
-        </ResponsiveContainer>
-      </div>
+      {lossType === 'bar' ? (
+        <BarMiniChart data={data} dataKey="loss" fill="#f43f5e" label="損失枚数棒グラフ" />
+      ) : (
+        <LineMiniChart data={data} dataKey="loss" stroke="#f43f5e" fillLabel="損失枚数折れ線グラフ" />
+      )}
     </div>
   </div>
 );
@@ -117,8 +236,22 @@ export const RecordItem = ({ record, onDelete, onEdit }) => (
         </div>
       </div>
       <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100">
-        <button onClick={() => onEdit(record.id)} className="text-indigo-500 hover:text-indigo-700 transition-colors px-2 py-1 font-bold text-[11px]">編集</button>
-        <button onClick={() => onDelete(record.id)} className="text-slate-900 hover:text-slate-700 transition-colors px-2 py-1"><Trash2 size={16} /></button>
+        <button
+          type="button"
+          onClick={() => onEdit(record.id)}
+          className="text-indigo-500 hover:text-indigo-700 transition-colors px-2 py-1"
+          aria-label={`履歴を編集: ${record.date} ${record.machineName}`}
+        >
+          <Pencil size={16} />
+        </button>
+        <button
+          type="button"
+          onClick={() => onDelete(record.id)}
+          className="text-slate-900 hover:text-slate-700 transition-colors px-2 py-1"
+          aria-label={`履歴を削除: ${record.date} ${record.machineName}`}
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
     </div>
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-5">
@@ -337,9 +470,10 @@ export const RecentHistorySection = ({ records, onEdit, onDelete }) => {
                   <button
                     type="button"
                     onClick={() => onEdit(record.id)}
-                    className="p-2 bg-indigo-100 text-indigo-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold hover:bg-indigo-200 whitespace-nowrap"
+                    className="p-2 bg-indigo-100 text-indigo-600 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity hover:bg-indigo-200"
+                    aria-label={`直近履歴を編集: ${record.date} ${record.machineName}`}
                   >
-                    編集
+                    <Pencil size={16} />
                   </button>
                   <button
                     type="button"
