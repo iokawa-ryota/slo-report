@@ -547,13 +547,13 @@ const App = () => {
         </div>
 
         {showForm && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl my-8">
-              <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+          <div className="fixed inset-0 z-[60] flex items-start justify-center bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-hidden sm:items-center sm:p-4">
+            <div className="bg-white shadow-2xl w-full min-h-screen rounded-none sm:min-h-0 sm:max-w-2xl sm:rounded-3xl sm:my-8">
+              <div className="p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
                 <h2 className="text-lg font-black text-slate-800 flex items-center gap-2"><PlusCircle className="text-indigo-600"/> {editingRecordId !== null ? '実践記録を編集' : '新規実践記録'}</h2>
                 <button type="button" aria-label="フォームを閉じる" onClick={cancelEdit} className="p-2 text-slate-400 hover:text-slate-600"><X/></button>
               </div>
-              <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto text-left">
+              <form onSubmit={handleSubmit} className="p-6 pb-10 space-y-6 max-h-none overflow-y-auto overflow-x-hidden text-left sm:max-h-[80vh]">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <InputSelect label="機種" name="machineName" value={formData.machineName} onChange={handleInputChange} options={MACHINE_OPTIONS} />
                   <InputPlain label="日付" name="date" type="date" value={formData.date} onChange={handleInputChange} />

@@ -187,6 +187,7 @@ describe('App', () => {
     await user.click(screen.getAllByRole('button', { name: 'データ入力' })[0]);
     await screen.findByRole('button', { name: '記録を保存する' });
 
+    expect(document.querySelector('form')?.parentElement).toHaveClass('min-h-screen', 'rounded-none', 'sm:rounded-3xl');
     expect(document.querySelector('#final-games-section')).toHaveClass('grid-cols-1', 'sm:grid-cols-3');
     expect(document.querySelector('#small-role-loss-section')).toHaveClass('grid-cols-1', 'sm:grid-cols-3');
     expect(document.querySelector('#recent-history-section .group > div')).toHaveClass('flex-col', 'sm:flex-row');

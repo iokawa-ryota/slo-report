@@ -22,6 +22,7 @@ async function expectNoHorizontalOverflow(page, selector, message) {
 async function addRecord(page, record) {
   await page.locator('header button').nth(1).click();
   await expectVisible(page.locator('form'), '入力フォームが開きませんでした');
+  await expectNoHorizontalOverflow(page, 'form', '新規入力フォームのモバイル表示で横スクロールが発生しています');
 
   await page.locator('select[name="machineName"]').selectOption(record.machineName);
   await page.locator('input[name="date"]').fill(record.date);
