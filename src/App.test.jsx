@@ -108,6 +108,9 @@ const { createRecordMock } = vi.hoisted(() => ({
 const updateRecordMock = vi.hoisted(() => ({
   updateRecordMock: vi.fn()
 }));
+const deleteRecordMock = vi.hoisted(() => ({
+  deleteRecordMock: vi.fn()
+}));
 
 vi.mock('./firebase/db', () => ({
   subscribeToRecords: (callback) => {
@@ -116,7 +119,7 @@ vi.mock('./firebase/db', () => ({
   },
   createRecord: createRecordMock,
   updateRecord: updateRecordMock.updateRecordMock,
-  deleteRecord: vi.fn(),
+  deleteRecord: deleteRecordMock.deleteRecordMock,
   migrateFromLocalStorage: vi.fn()
 }));
 
@@ -126,6 +129,7 @@ describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.localStorage.clear();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
   it('shows the app without the Firebase login overlay in local mode', async () => {
@@ -160,6 +164,28 @@ describe('App', () => {
     expect(updateRecordMock.updateRecordMock).toHaveBeenCalled();
     expect((await screen.findAllByText('全機種 累計収支')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('直近5件の履歴').length).toBeGreaterThan(0);
+  });
+
+  it('deletes a record from recent history', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByLabelText('直近履歴を削除: 2026-03-01 バーサスリヴァイズ')[0]);
+
+    expect(window.confirm).toHaveBeenCalledWith('削除しますか？');
+    expect(deleteRecordMock.deleteRecordMock).toHaveBeenCalledWith('record-1');
+  });
+
+  it('uses single-column mobile-first layouts in cramped form sections', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: 'データ入力' })[0]);
+    await screen.findByRole('button', { name: '記録を保存する' });
+
+    expect(document.querySelector('#final-games-section')).toHaveClass('grid-cols-1', 'sm:grid-cols-3');
+    expect(document.querySelector('#small-role-loss-section')).toHaveClass('grid-cols-1', 'sm:grid-cols-3');
+    expect(document.querySelector('#recent-history-section .group > div')).toHaveClass('flex-col', 'sm:flex-row');
   });
 
 });

@@ -480,7 +480,7 @@ const App = () => {
         <div className="p-6 md:p-8 max-w-6xl mx-auto w-full">
           <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
             <div className="text-[10px] font-black text-slate-500 uppercase mb-3">期間フィルター</div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="text-[9px] font-bold text-slate-600 block mb-1">開始日</label>
                 <input 
@@ -500,7 +500,7 @@ const App = () => {
                 />
               </div>
               {(dateRangeStart || dateRangeEnd) && (
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <button 
                     onClick={() => {setDateRangeStart(''); setDateRangeEnd('');}}
                     className="w-full px-3 py-2 bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold hover:bg-slate-300 transition-all"
@@ -520,7 +520,11 @@ const App = () => {
                 <StatCard title="全機種 総回転数" value={`${totalStats.games.toLocaleString()} G`} color="text-slate-600" />
               </div>
               <ChartSection data={dashboardChartData} lossType={lossChartType} setLossType={setLossChartType} />
-              <RecentHistorySection records={filterRecordsByDateRange(records)} onEdit={loadRecordForEdit} />
+              <RecentHistorySection
+                records={filterRecordsByDateRange(records)}
+                onEdit={loadRecordForEdit}
+                onDelete={deleteRecord}
+              />
             </>
           )}
 

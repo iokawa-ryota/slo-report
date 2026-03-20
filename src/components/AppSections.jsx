@@ -118,10 +118,10 @@ export const RecordItem = ({ record, onDelete, onEdit }) => (
       </div>
       <div className="flex gap-2 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 focus:opacity-100">
         <button onClick={() => onEdit(record.id)} className="text-indigo-500 hover:text-indigo-700 transition-colors px-2 py-1 font-bold text-[11px]">編集</button>
-        <button onClick={() => onDelete(record.id)} className="text-slate-200 hover:text-rose-500 transition-colors px-2 py-1"><Trash2 size={16} /></button>
+        <button onClick={() => onDelete(record.id)} className="text-slate-900 hover:text-slate-700 transition-colors px-2 py-1"><Trash2 size={16} /></button>
       </div>
     </div>
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-5">
       <DataBox label="実践G数" value={`${record.stats?.personal?.games}G`} />
       <DataBox label="ボーナス" value={`B${record.stats?.personal?.big} R${record.stats?.personal?.reg}`} />
       <DataBox label="収支" value={`${record.profitYen.toLocaleString()}円`} color={record.profitYen >= 0 ? 'text-emerald-600' : 'text-rose-600'} />
@@ -166,13 +166,13 @@ export const GamesBonusSection = ({ isMidStart, setIsMidStart, formData, handleI
       <button type="button" onClick={() => setIsMidStart(!isMidStart)} className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${isMidStart ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-400'}`}>途中打ち設定</button>
     </div>
     {isMidStart && (
-      <div id="mid-start-section" className="grid grid-cols-3 gap-2 pb-2 border-b border-slate-200">
+      <div id="mid-start-section" className="grid grid-cols-1 gap-2 pb-2 border-b border-slate-200 sm:grid-cols-3">
         <InputPlain label="開始G" name="startTotalGames" value={formData.startTotalGames} onChange={handleInputChange} />
         <InputPlain label="開始B" name="startBigCount" value={formData.startBigCount} onChange={handleInputChange} />
         <InputPlain label="開始R" name="startRegCount" value={formData.startRegCount} onChange={handleInputChange} />
       </div>
     )}
-    <div id="final-games-section" className="grid grid-cols-3 gap-2">
+    <div id="final-games-section" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
       <InputPlain label="終了総G" name="totalGames" value={formData.totalGames} onChange={handleInputChange} />
       <InputPlain label="終了B" name="bigCount" value={formData.bigCount} onChange={handleInputChange} />
       <InputPlain label="終了R" name="regCount" value={formData.regCount} onChange={handleInputChange} />
@@ -185,7 +185,7 @@ export const VersusReviseTechInterventionSection = ({ formData, handleInputChang
     <div id="mid-reel-section" className="grid grid-cols-1 gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
       <div className="space-y-3">
         <label className="text-[10px] font-black text-indigo-600 uppercase border-b border-indigo-100 block pb-1">中リール第1停止</label>
-        <div id="mid-inputs" className="grid grid-cols-3 gap-2">
+        <div id="mid-inputs" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <InputPlain label="スイカ揃い(15枚)" name="midSuccess" placeholder="成功" value={formData.midSuccess} onChange={handleInputChange} />
           <InputPlain label="救済(15枚)" name="midNotWatermelon" placeholder="救済" value={formData.midNotWatermelon} onChange={handleInputChange} color="text-indigo-400" />
           <InputPlain label="失敗(4枚)" name="midMiss" placeholder="失敗" value={formData.midMiss} onChange={handleInputChange} color="text-rose-500" />
@@ -193,7 +193,7 @@ export const VersusReviseTechInterventionSection = ({ formData, handleInputChang
       </div>
       <div id="right-reel-section" className="space-y-3 pt-2">
         <label className="text-[10px] font-black text-indigo-600 uppercase border-b border-indigo-100 block pb-1">右リール第1停止</label>
-        <div id="right-inputs" className="grid grid-cols-2 gap-2">
+        <div id="right-inputs" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <InputPlain label="成功(15枚)" name="rightSuccess" placeholder="成功" value={formData.rightSuccess} onChange={handleInputChange} />
           <InputPlain label="失敗(4枚)" name="rightMiss" placeholder="失敗" value={formData.rightMiss} onChange={handleInputChange} color="text-rose-500" />
         </div>
@@ -207,7 +207,7 @@ export const ShinHanabiTechInterventionSection = ({ formData, handleInputChange 
     <div id="mid-reel-section" className="grid grid-cols-1 gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
       <div className="space-y-3">
         <label className="text-[10px] font-black text-indigo-600 uppercase border-b border-indigo-100 block pb-1">中リール第1停止</label>
-        <div id="mid-inputs" className="grid grid-cols-3 gap-2">
+        <div id="mid-inputs" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <InputPlain label="氷揃い(15枚)" name="midSuccess" placeholder="成功" value={formData.midSuccess} onChange={handleInputChange} />
           <InputPlain label="救済(15枚)" name="midNotWatermelon" placeholder="救済" value={formData.midNotWatermelon} onChange={handleInputChange} color="text-indigo-400" />
           <InputPlain label="失敗(4枚)" name="midMiss" placeholder="失敗" value={formData.midMiss} onChange={handleInputChange} color="text-rose-500" />
@@ -215,7 +215,7 @@ export const ShinHanabiTechInterventionSection = ({ formData, handleInputChange 
       </div>
       <div id="right-reel-section" className="space-y-3 pt-2">
         <label className="text-[10px] font-black text-indigo-600 uppercase border-b border-indigo-100 block pb-1">右リール第1停止</label>
-        <div id="right-inputs" className="grid grid-cols-2 gap-2">
+        <div id="right-inputs" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <InputPlain label="成功(15枚)" name="rightSuccess" placeholder="成功" value={formData.rightSuccess} onChange={handleInputChange} />
           <InputPlain label="失敗(4枚)" name="rightMiss" placeholder="失敗" value={formData.rightMiss} onChange={handleInputChange} color="text-rose-500" />
         </div>
@@ -229,7 +229,7 @@ export const LHanabiTechInterventionSection = ({ formData, handleInputChange }) 
     <div id="right-reel-section" className="grid grid-cols-1 gap-4 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
       <div className="space-y-3">
         <label className="text-[10px] font-black text-indigo-600 uppercase border-b border-indigo-100 block pb-1">右リール第1停止</label>
-        <div id="right-inputs" className="grid grid-cols-2 gap-2">
+        <div id="right-inputs" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <InputPlain label="成功(15枚)" name="rightSuccess" placeholder="成功" value={formData.rightSuccess} onChange={handleInputChange} />
           <InputPlain label="失敗(4枚)" name="rightMiss" placeholder="失敗" value={formData.rightMiss} onChange={handleInputChange} color="text-rose-500" />
         </div>
@@ -247,7 +247,7 @@ export const TechDetailSectionOther = () => (
 );
 
 export const SmallRoleLossSection = ({ currentConfig, formData, handleInputChange }) => (
-  <div id="small-role-loss-section" className="bg-rose-50 p-4 rounded-2xl border border-rose-100 grid grid-cols-3 gap-2">
+  <div id="small-role-loss-section" className="bg-rose-50 p-4 rounded-2xl border border-rose-100 grid grid-cols-1 gap-2 sm:grid-cols-3">
     <InputPlain label={`${currentConfig.watermelonName}欠損`} name="watermelonLossCount" value={formData.watermelonLossCount} onChange={handleInputChange} color="text-rose-400" />
     <InputPlain label={`${currentConfig.cherryName}欠損`} name="cherryLossCount" value={formData.cherryLossCount} onChange={handleInputChange} color="text-rose-400" />
     <InputPlain label="他損失(枚)" name="otherLossCount" value={formData.otherLossCount} onChange={handleInputChange} color="text-rose-400" />
@@ -286,7 +286,7 @@ export const InvestmentRecoverySection = ({ formData, handleInputChange }) => (
   </div>
 );
 
-export const RecentHistorySection = ({ records, onEdit }) => {
+export const RecentHistorySection = ({ records, onEdit, onDelete }) => {
   const recentRecords = records.slice(0, 5);
 
   if (recentRecords.length === 0) {
@@ -318,15 +318,15 @@ export const RecentHistorySection = ({ records, onEdit }) => {
 
           return (
             <div key={index} className="p-3 bg-white rounded-lg border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all group">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex-1 cursor-pointer" onClick={() => onEdit(record.id)}>
                   <p className="text-[11px] font-bold text-slate-700">{record.date} - {record.machineName}</p>
                   <p className="text-[10px] text-slate-500 mt-1">
                     投資: {record.investment}{record.investmentUnit} / 回収: {record.recovery}{record.recoveryUnit}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
+                <div className="flex items-center justify-between gap-3 sm:justify-end">
+                  <div className="text-left sm:text-right">
                     <p className={`text-[12px] font-bold ${isProfit ? 'text-emerald-600' : 'text-rose-600'}`}>
                       {isProfit ? '+' : ''}{diffMedals} 枚
                     </p>
@@ -340,6 +340,14 @@ export const RecentHistorySection = ({ records, onEdit }) => {
                     className="p-2 bg-indigo-100 text-indigo-600 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity text-[11px] font-bold hover:bg-indigo-200 whitespace-nowrap"
                   >
                     編集
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDelete(record.id)}
+                    className="p-2 text-slate-900 hover:text-slate-700 transition-colors"
+                    aria-label={`直近履歴を削除: ${record.date} ${record.machineName}`}
+                  >
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>

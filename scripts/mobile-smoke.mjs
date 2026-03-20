@@ -9,6 +9,16 @@ async function expectVisible(locator, message) {
   }
 }
 
+async function expectNoHorizontalOverflow(page, selector, message) {
+  const hasOverflow = await page.locator(selector).evaluate((element) => (
+    element.scrollWidth - element.clientWidth > 1
+  ));
+
+  if (hasOverflow) {
+    throw new Error(message);
+  }
+}
+
 async function addRecord(page, record) {
   await page.locator('header button').nth(1).click();
   await expectVisible(page.locator('form'), '入力フォームが開きませんでした');
@@ -51,6 +61,7 @@ async function run() {
     await menuButton.click();
     await expectVisible(page.getByRole('button', { name: '総合ダッシュボード' }), 'サイドメニューを再度開けませんでした');
     await page.getByRole('button', { name: '総合ダッシュボード' }).click();
+    await expectNoHorizontalOverflow(page, 'body', '初期表示のモバイル画面で横スクロールが発生しています');
     await addRecord(page, {
       machineName: 'テスト',
       date: '2026-03-10',
@@ -74,6 +85,7 @@ async function run() {
     await page.waitForTimeout(300);
     await page.getByRole('button', { name: '編集' }).first().click();
     await expectVisible(page.getByRole('heading', { name: '実践記録を編集' }), '編集モーダルが開きませんでした');
+    await expectNoHorizontalOverflow(page, 'form', '編集フォームのモバイル表示で横スクロールが発生しています');
 
     const editMachine = await page.locator('select[name="machineName"]').inputValue();
     const editMemo = await page.locator('textarea[name="memo"]').inputValue();
