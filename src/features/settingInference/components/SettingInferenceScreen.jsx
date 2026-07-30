@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   ChevronDown,
   Cpu,
+  ExternalLink,
   RefreshCw,
   Save,
   Trash2
@@ -97,6 +98,55 @@ const ConfirmModal = ({ title, body, confirmLabel, onConfirm, onCancel }) => (
   </div>
 );
 
+const EntryModal = ({ title, subtitle, countLabel, onClose, children }) => (
+  <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm">
+    <div className="flex min-h-full items-end justify-center sm:items-center sm:p-4">
+      <div className="flex min-h-[85vh] w-full flex-col rounded-t-3xl bg-white shadow-2xl sm:min-h-0 sm:max-w-lg sm:rounded-3xl">
+        <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-4 sm:px-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="text-xs font-black text-slate-800">{title}</div>
+              {subtitle && <p className="mt-1 text-xs text-slate-500">{subtitle}</p>}
+              {countLabel && <p className="mt-2 text-[11px] font-bold text-indigo-600">{countLabel}</p>}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-11 min-w-11 rounded-xl border border-slate-200 text-sm font-bold text-slate-600"
+              aria-label={`${title} モーダルを閉じる`}
+            >
+              閉じる
+            </button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+          {children}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const SummaryActionCard = ({ title, description, countLabel, primaryLabel, onOpen }) => (
+  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <div className="text-sm font-black text-slate-800">{title}</div>
+        <p className="mt-1 text-xs text-slate-500">{description}</p>
+        <p className="mt-2 text-xs font-black text-indigo-600">{countLabel}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
+      >
+        <ExternalLink size={16} />
+        {primaryLabel}
+      </button>
+    </div>
+  </div>
+);
+
 const getBonusColorOptions = (bonusType) => (
   bonusType === 'REG' ? UMINEKO2_REG_COLOR_OPTIONS : UMINEKO2_BIG_COLOR_OPTIONS
 );
@@ -129,6 +179,9 @@ export const SettingInferenceScreen = () => {
   const [bonusDraft, setBonusDraft] = useState(createDefaultBonusDraft);
   const [truthPointDraft, setTruthPointDraft] = useState(UMINEKO2_TRUTH_POINT_OPTIONS[0]);
   const [level2NaviDraft, setLevel2NaviDraft] = useState(UMINEKO2_LEVEL2_NAVI_OPTIONS[0]);
+  const [isSpecialBonusModalOpen, setIsSpecialBonusModalOpen] = useState(false);
+  const [isTruthPointModalOpen, setIsTruthPointModalOpen] = useState(false);
+  const [isLevel2NaviModalOpen, setIsLevel2NaviModalOpen] = useState(false);
 
   const syncEnabled = canSyncSettingInference();
   const supportedMetricLabels = useMemo(() => getSupportedLabels(inference.usedMetrics), [inference.usedMetrics]);
@@ -310,61 +363,13 @@ export const SettingInferenceScreen = () => {
                 steps={[-1, 1]}
               />
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="text-sm font-black text-slate-800">特定ボーナスを追加</div>
-                <div className="mt-3 space-y-3">
-                  <LabeledField label="当選契機" fieldId="bonus-trigger">
-                    <select
-                      value={bonusDraft.trigger}
-                      onChange={(event) => setBonusDraft((prev) => ({ ...prev, trigger: event.target.value }))}
-                      className={selectClass}
-                    >
-                      {UMINEKO2_BONUS_TRIGGER_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </select>
-                  </LabeledField>
-                  <LabeledField label="BB / REG" fieldId="bonus-type">
-                    <select
-                      value={bonusDraft.bonusType}
-                      onChange={(event) => {
-                        const nextType = event.target.value;
-                        setBonusDraft((prev) => ({
-                          ...prev,
-                          bonusType: nextType,
-                          bonusColor: getBonusColorOptions(nextType)[0]
-                        }));
-                      }}
-                      className={selectClass}
-                    >
-                      {UMINEKO2_BONUS_TYPE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </select>
-                  </LabeledField>
-                  <LabeledField label="当選色" fieldId="bonus-color">
-                    <select
-                      value={bonusDraft.bonusColor}
-                      onChange={(event) => setBonusDraft((prev) => ({ ...prev, bonusColor: event.target.value }))}
-                      className={selectClass}
-                    >
-                      {getBonusColorOptions(bonusDraft.bonusType).map((option) => <option key={option} value={option}>{option}</option>)}
-                    </select>
-                  </LabeledField>
-                  <button type="button" onClick={addSpecialBonus} className="min-h-11 w-full rounded-xl bg-indigo-600 px-4 text-sm font-black text-white">
-                    このボーナスを1件追加
-                  </button>
-                </div>
-              </div>
-
-              <Accordion title={`特定ボーナス履歴 (${input.specialBonuses.length})`} subtitle="確認できたボーナスだけ積み上げます" testId="special-bonus-history">
-                <div className="space-y-3">
-                  {input.specialBonuses.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
-                  {input.specialBonuses.map((entry) => (
-                    <EventCard
-                      key={entry.id}
-                      title={`${entry.trigger} / ${entry.bonusType} / ${entry.bonusColor}`}
-                      onDelete={() => removeListEntry('specialBonuses', entry.id)}
-                    />
-                  ))}
-                </div>
-              </Accordion>
+              <SummaryActionCard
+                title="特定ボーナス履歴"
+                description="確認できたボーナスを1件ずつ追加します。入力と履歴確認はモーダルで行います。"
+                countLabel={`${input.specialBonuses.length}件記録済み`}
+                primaryLabel="追加・確認"
+                onOpen={() => setIsSpecialBonusModalOpen(true)}
+              />
             </div>
           </Accordion>
         </div>
@@ -497,59 +502,21 @@ export const SettingInferenceScreen = () => {
           </div>
 
           <div className={twoColumnCompactGridClass}>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="text-sm font-black text-slate-800">特殊条件</div>
-              <p className="mt-1 text-xs text-slate-500">周期天井到達時の真実ポイントを1件ずつ記録します。</p>
-              <div className="mt-3 space-y-3">
-                <select value={truthPointDraft} onChange={(event) => setTruthPointDraft(event.target.value)} className={selectClass}>
-                  {UMINEKO2_TRUTH_POINT_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
-                </select>
-                <button type="button" onClick={addTruthPointEvent} className="min-h-11 w-full rounded-xl bg-slate-900 px-4 text-sm font-black text-white">
-                  このイベントを1件追加
-                </button>
-              </div>
-            </div>
+            <SummaryActionCard
+              title="真実ポイント"
+              description="周期天井到達時の真実ポイントを1件ずつ記録します。"
+              countLabel={`${input.truthPointEvents.length}件記録済み`}
+              primaryLabel="追加・確認"
+              onOpen={() => setIsTruthPointModalOpen(true)}
+            />
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="text-sm font-black text-slate-800">特殊条件</div>
-              <p className="mt-1 text-xs text-slate-500">レベル2ナビ発生抽選のパターンを1件ずつ記録します。</p>
-              <div className="mt-3 space-y-3">
-                <select value={level2NaviDraft} onChange={(event) => setLevel2NaviDraft(event.target.value)} className={selectClass}>
-                  {UMINEKO2_LEVEL2_NAVI_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
-                </select>
-                <button type="button" onClick={addLevel2NaviEvent} className="min-h-11 w-full rounded-xl bg-slate-900 px-4 text-sm font-black text-white">
-                  このイベントを1件追加
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className={twoColumnCompactGridClass}>
-            <Accordion title={`真実ポイント履歴 (${input.truthPointEvents.length})`} subtitle="到達したポイントを1回ごとに残します">
-              <div className="space-y-3">
-                {input.truthPointEvents.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
-                {input.truthPointEvents.map((entry) => (
-                  <EventCard
-                    key={entry.id}
-                    title={`真実ポイント: ${entry.point}`}
-                    onDelete={() => removeListEntry('truthPointEvents', entry.id)}
-                  />
-                ))}
-              </div>
-            </Accordion>
-
-            <Accordion title={`レベル2ナビ履歴 (${input.level2NaviEvents.length})`} subtitle="確認できたナビを1回ごとに残します">
-              <div className="space-y-3">
-                {input.level2NaviEvents.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
-                {input.level2NaviEvents.map((entry) => (
-                  <EventCard
-                    key={entry.id}
-                    title={`レベル2ナビ: ${entry.pattern}`}
-                    onDelete={() => removeListEntry('level2NaviEvents', entry.id)}
-                  />
-                ))}
-              </div>
-            </Accordion>
+            <SummaryActionCard
+              title="レベル2ナビ"
+              description="レベル2ナビ発生抽選のパターンを1件ずつ記録します。"
+              countLabel={`${input.level2NaviEvents.length}件記録済み`}
+              primaryLabel="追加・確認"
+              onOpen={() => setIsLevel2NaviModalOpen(true)}
+            />
           </div>
         </div>
       </Accordion>
@@ -624,6 +591,143 @@ export const SettingInferenceScreen = () => {
           onConfirm={handleClearFieldConfirm}
           onCancel={() => setPendingClearField(null)}
         />
+      )}
+
+      {isSpecialBonusModalOpen && (
+        <EntryModal
+          title="特定ボーナス履歴"
+          subtitle="当選契機、BB/REG、当選色を1件ずつ残します。"
+          countLabel={`${input.specialBonuses.length}件記録済み`}
+          onClose={() => setIsSpecialBonusModalOpen(false)}
+        >
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="text-sm font-black text-slate-800">特定ボーナスを追加</div>
+              <div className="mt-3 space-y-3">
+                <LabeledField label="当選契機" fieldId="bonus-trigger-modal">
+                  <select
+                    value={bonusDraft.trigger}
+                    onChange={(event) => setBonusDraft((prev) => ({ ...prev, trigger: event.target.value }))}
+                    className={selectClass}
+                  >
+                    {UMINEKO2_BONUS_TRIGGER_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </LabeledField>
+                <LabeledField label="BB / REG" fieldId="bonus-type-modal">
+                  <select
+                    value={bonusDraft.bonusType}
+                    onChange={(event) => {
+                      const nextType = event.target.value;
+                      setBonusDraft((prev) => ({
+                        ...prev,
+                        bonusType: nextType,
+                        bonusColor: getBonusColorOptions(nextType)[0]
+                      }));
+                    }}
+                    className={selectClass}
+                  >
+                    {UMINEKO2_BONUS_TYPE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </LabeledField>
+                <LabeledField label="当選色" fieldId="bonus-color-modal">
+                  <select
+                    value={bonusDraft.bonusColor}
+                    onChange={(event) => setBonusDraft((prev) => ({ ...prev, bonusColor: event.target.value }))}
+                    className={selectClass}
+                  >
+                    {getBonusColorOptions(bonusDraft.bonusType).map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </LabeledField>
+                <button type="button" onClick={addSpecialBonus} className="min-h-11 w-full rounded-xl bg-indigo-600 px-4 text-sm font-black text-white">
+                  このボーナスを1件追加
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {input.specialBonuses.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
+              {input.specialBonuses.map((entry) => (
+                <EventCard
+                  key={entry.id}
+                  title={`${entry.trigger} / ${entry.bonusType} / ${entry.bonusColor}`}
+                  onDelete={() => removeListEntry('specialBonuses', entry.id)}
+                />
+              ))}
+            </div>
+          </div>
+        </EntryModal>
+      )}
+
+      {isTruthPointModalOpen && (
+        <EntryModal
+          title="真実ポイント"
+          subtitle="周期天井到達時の真実ポイントを1件ずつ記録します。"
+          countLabel={`${input.truthPointEvents.length}件記録済み`}
+          onClose={() => setIsTruthPointModalOpen(false)}
+        >
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="text-sm font-black text-slate-800">真実ポイントを追加</div>
+              <div className="mt-3 space-y-3">
+                <LabeledField label="真実ポイント" fieldId="truth-point-modal">
+                  <select value={truthPointDraft} onChange={(event) => setTruthPointDraft(event.target.value)} className={selectClass}>
+                    {UMINEKO2_TRUTH_POINT_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </LabeledField>
+                <button type="button" onClick={addTruthPointEvent} className="min-h-11 w-full rounded-xl bg-slate-900 px-4 text-sm font-black text-white">
+                  このイベントを1件追加
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {input.truthPointEvents.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
+              {input.truthPointEvents.map((entry) => (
+                <EventCard
+                  key={entry.id}
+                  title={`真実ポイント: ${entry.point}`}
+                  onDelete={() => removeListEntry('truthPointEvents', entry.id)}
+                />
+              ))}
+            </div>
+          </div>
+        </EntryModal>
+      )}
+
+      {isLevel2NaviModalOpen && (
+        <EntryModal
+          title="レベル2ナビ"
+          subtitle="レベル2ナビ発生抽選のパターンを1件ずつ記録します。"
+          countLabel={`${input.level2NaviEvents.length}件記録済み`}
+          onClose={() => setIsLevel2NaviModalOpen(false)}
+        >
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="text-sm font-black text-slate-800">レベル2ナビを追加</div>
+              <div className="mt-3 space-y-3">
+                <LabeledField label="レベル2ナビ" fieldId="level2-navi-modal">
+                  <select value={level2NaviDraft} onChange={(event) => setLevel2NaviDraft(event.target.value)} className={selectClass}>
+                    {UMINEKO2_LEVEL2_NAVI_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </LabeledField>
+                <button type="button" onClick={addLevel2NaviEvent} className="min-h-11 w-full rounded-xl bg-slate-900 px-4 text-sm font-black text-white">
+                  このイベントを1件追加
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {input.level2NaviEvents.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
+              {input.level2NaviEvents.map((entry) => (
+                <EventCard
+                  key={entry.id}
+                  title={`レベル2ナビ: ${entry.pattern}`}
+                  onDelete={() => removeListEntry('level2NaviEvents', entry.id)}
+                />
+              ))}
+            </div>
+          </div>
+        </EntryModal>
       )}
     </div>
   );

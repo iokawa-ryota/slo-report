@@ -238,6 +238,7 @@ describe('App', () => {
 
     await user.click(screen.getAllByRole('button', { name: '設定推測' })[0]);
 
+    await user.click(await screen.findAllByRole('button', { name: '追加・確認' }).then((buttons) => buttons[0]));
     expect(await screen.findByRole('option', { name: '不明' })).toBeInTheDocument();
 
     await user.selectOptions(screen.getByRole('combobox', { name: '当選契機' }), '単独');
@@ -249,6 +250,25 @@ describe('App', () => {
     expect(screen.getByRole('combobox', { name: 'BB / REG' })).toHaveValue('BIG');
     expect(screen.getByRole('combobox', { name: '当選色' })).toHaveValue('赤異色');
     expect(screen.getByText('単独 / REG / 白')).toBeInTheDocument();
+  });
+
+  it('manages truth point events inside a modal', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: '設定推測' })[0]);
+    await user.click((await screen.findAllByRole('button', { name: '追加・確認' }))[1]);
+
+    expect(await screen.findByText('真実ポイントを追加')).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: '真実ポイント' }), '500pt以上');
+    await user.click(screen.getByRole('button', { name: 'このイベントを1件追加' }));
+
+    expect(screen.getByText('真実ポイント: 500pt以上')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '真実ポイント モーダルを閉じる' }));
+
+    expect(screen.queryByText('真実ポイントを追加')).not.toBeInTheDocument();
+    expect(screen.getAllByText('1件記録済み').length).toBeGreaterThan(0);
   });
 
   it('confirms before clearing a setting inference field', async () => {
