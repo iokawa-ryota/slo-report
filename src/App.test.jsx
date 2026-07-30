@@ -211,4 +211,43 @@ describe('App', () => {
     expect(screen.getByText('除外項目')).toBeInTheDocument();
   });
 
+  it('confirms before resetting the setting inference draft', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: '設定推測' })[0]);
+
+    const totalGamesInput = await screen.findByRole('textbox', { name: '総ゲーム数' });
+    await user.clear(totalGamesInput);
+    await user.type(totalGamesInput, '2500');
+    await user.click(screen.getByRole('button', { name: '入力をリセット' }));
+
+    expect(screen.getByText('入力をリセットしますか？')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '総ゲーム数' })).toHaveValue('2500');
+
+    await user.click(screen.getByRole('button', { name: 'リセットする' }));
+
+    expect(screen.queryByText('入力をリセットしますか？')).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '総ゲーム数' })).toHaveValue('');
+  });
+
+  it('resets the special bonus form after adding an entry and supports unknown trigger', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: '設定推測' })[0]);
+
+    expect(await screen.findByRole('option', { name: '不明' })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: '当選契機' }), '単独');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'BB / REG' }), 'REG');
+    await user.selectOptions(screen.getByRole('combobox', { name: '当選色' }), '白');
+    await user.click(screen.getByRole('button', { name: 'このボーナスを1件追加' }));
+
+    expect(screen.getByRole('combobox', { name: '当選契機' })).toHaveValue('不明');
+    expect(screen.getByRole('combobox', { name: 'BB / REG' })).toHaveValue('BIG');
+    expect(screen.getByRole('combobox', { name: '当選色' })).toHaveValue('赤異色');
+    expect(screen.getByText('単独 / REG / 白')).toBeInTheDocument();
+  });
+
 });

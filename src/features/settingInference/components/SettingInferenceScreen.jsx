@@ -21,7 +21,6 @@ import {
   UMINEKO2_BONUS_TRIGGER_OPTIONS,
   UMINEKO2_BONUS_TYPE_OPTIONS,
   UMINEKO2_LEVEL2_NAVI_OPTIONS,
-  UMINEKO2_LOGO_FLASH_OPTIONS,
   UMINEKO2_REG_COLOR_OPTIONS,
   UMINEKO2_TRUTH_POINT_OPTIONS
 } from '../config/umineko2.js';
@@ -30,6 +29,8 @@ const sectionClass = 'rounded-3xl border border-slate-200 bg-white p-4 shadow-sm
 const inputClass = 'h-12 w-full rounded-xl border border-slate-200 px-4 text-sm font-bold outline-none focus:border-indigo-500';
 const selectClass = `${inputClass} bg-white`;
 const listCardClass = 'rounded-2xl border border-slate-200 bg-slate-50 p-4';
+const compactGridClass = 'grid grid-cols-3 gap-2';
+const twoColumnCompactGridClass = 'grid grid-cols-2 gap-2';
 
 const Accordion = ({ title, subtitle, children, defaultOpen = false, testId }) => (
   <details className="rounded-3xl border border-slate-200 bg-white shadow-sm" open={defaultOpen} data-testid={testId}>
@@ -46,10 +47,10 @@ const Accordion = ({ title, subtitle, children, defaultOpen = false, testId }) =
   </details>
 );
 
-const LabeledField = ({ label, children, hint = '' }) => (
+const LabeledField = ({ label, children, hint = '', fieldId }) => (
   <div className="space-y-1">
-    <label className="block text-xs font-black text-slate-700">{label}</label>
-    {children}
+    <label htmlFor={fieldId} className="block text-xs font-black text-slate-700">{label}</label>
+    {React.isValidElement(children) ? React.cloneElement(children, { id: fieldId }) : children}
     {hint && <p className="text-[11px] text-slate-400">{hint}</p>}
   </div>
 );
@@ -73,11 +74,41 @@ const EventCard = ({ title, subtitle, onDelete }) => (
   </div>
 );
 
+const ConfirmModal = ({ title, body, confirmLabel, onConfirm, onCancel }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm">
+    <div className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-xl">
+      <h3 className="text-base font-black text-slate-900">{title}</h3>
+      <p className="mt-2 text-sm text-slate-600">{body}</p>
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="min-h-11 rounded-xl border border-slate-200 px-4 text-sm font-bold text-slate-600"
+        >
+          キャンセル
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="min-h-11 rounded-xl bg-rose-600 px-4 text-sm font-black text-white"
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 const getBonusColorOptions = (bonusType) => (
   bonusType === 'REG' ? UMINEKO2_REG_COLOR_OPTIONS : UMINEKO2_BIG_COLOR_OPTIONS
 );
 
 const getSupportedLabels = (usedMetrics) => usedMetrics.map((metric) => metric.label).join(' / ');
+const createDefaultBonusDraft = () => ({
+  trigger: UMINEKO2_BONUS_TRIGGER_OPTIONS[0],
+  bonusType: 'BIG',
+  bonusColor: UMINEKO2_BIG_COLOR_OPTIONS[0]
+});
 
 export const SettingInferenceScreen = () => {
   const {
@@ -95,12 +126,8 @@ export const SettingInferenceScreen = () => {
   const [saveMessage, setSaveMessage] = useState('');
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [bonusDraft, setBonusDraft] = useState({
-    trigger: UMINEKO2_BONUS_TRIGGER_OPTIONS[0],
-    bonusType: 'BIG',
-    bonusColor: UMINEKO2_BIG_COLOR_OPTIONS[0]
-  });
-  const [logoDraft, setLogoDraft] = useState(UMINEKO2_LOGO_FLASH_OPTIONS[0]);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [bonusDraft, setBonusDraft] = useState(createDefaultBonusDraft);
   const [truthPointDraft, setTruthPointDraft] = useState(UMINEKO2_TRUTH_POINT_OPTIONS[0]);
   const [level2NaviDraft, setLevel2NaviDraft] = useState(UMINEKO2_LEVEL2_NAVI_OPTIONS[0]);
 
@@ -139,10 +166,7 @@ export const SettingInferenceScreen = () => {
 
   const addSpecialBonus = () => {
     addListEntry('specialBonuses', bonusDraft);
-  };
-
-  const addLogoFlashEvent = () => {
-    addListEntry('logoFlashEvents', { pattern: logoDraft });
+    setBonusDraft(createDefaultBonusDraft());
   };
 
   const addTruthPointEvent = () => {
@@ -151,6 +175,14 @@ export const SettingInferenceScreen = () => {
 
   const addLevel2NaviEvent = () => {
     addListEntry('level2NaviEvents', { pattern: level2NaviDraft });
+  };
+
+  const handleResetConfirm = () => {
+    resetDraft();
+    setShowResetConfirm(false);
+    setBonusDraft(createDefaultBonusDraft());
+    setSaveMessage('');
+    setSaveError('');
   };
 
   return (
@@ -179,7 +211,7 @@ export const SettingInferenceScreen = () => {
           </div>
           <button
             type="button"
-            onClick={resetDraft}
+            onClick={() => setShowResetConfirm(true)}
             className="min-h-11 rounded-xl border border-slate-200 px-4 text-xs font-bold text-slate-600"
           >
             入力をリセット
@@ -194,87 +226,149 @@ export const SettingInferenceScreen = () => {
         testId="bonus-accordion"
       >
         <div className="space-y-4">
-          <StepperField
-            label="総ゲーム数"
-            name="totalGames"
-            value={input.totalGames}
-            onChange={handleFieldChange}
-            onAdjust={adjustField}
-            onClear={clearField}
-            steps={[-10, -1, 1, 10]}
-          />
-          <StepperField
-            label="BIG回数"
-            name="bigCount"
-            value={input.bigCount}
-            onChange={handleFieldChange}
-            onAdjust={adjustField}
-            onClear={clearField}
-            steps={[-1, 1]}
-          />
-          <StepperField
-            label="REG回数"
-            name="regCount"
-            value={input.regCount}
-            onChange={handleFieldChange}
-            onAdjust={adjustField}
-            onClear={clearField}
-            steps={[-1, 1]}
-          />
-
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="text-sm font-black text-slate-800">特定ボーナスを追加</div>
-            <div className="mt-3 space-y-3">
-              <LabeledField label="当選契機">
-                <select
-                  value={bonusDraft.trigger}
-                  onChange={(event) => setBonusDraft((prev) => ({ ...prev, trigger: event.target.value }))}
-                  className={selectClass}
-                >
-                  {UMINEKO2_BONUS_TRIGGER_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
-                </select>
-              </LabeledField>
-              <LabeledField label="BB / REG">
-                <select
-                  value={bonusDraft.bonusType}
-                  onChange={(event) => {
-                    const nextType = event.target.value;
-                    setBonusDraft((prev) => ({
-                      ...prev,
-                      bonusType: nextType,
-                      bonusColor: getBonusColorOptions(nextType)[0]
-                    }));
-                  }}
-                  className={selectClass}
-                >
-                  {UMINEKO2_BONUS_TYPE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
-                </select>
-              </LabeledField>
-              <LabeledField label="当選色">
-                <select
-                  value={bonusDraft.bonusColor}
-                  onChange={(event) => setBonusDraft((prev) => ({ ...prev, bonusColor: event.target.value }))}
-                  className={selectClass}
-                >
-                  {getBonusColorOptions(bonusDraft.bonusType).map((option) => <option key={option} value={option}>{option}</option>)}
-                </select>
-              </LabeledField>
-              <button type="button" onClick={addSpecialBonus} className="min-h-11 w-full rounded-xl bg-indigo-600 px-4 text-sm font-black text-white">
-                このボーナスを1件追加
-              </button>
-            </div>
+          <div className={compactGridClass}>
+            <StepperField
+              label="総ゲーム数"
+              name="totalGames"
+              value={input.totalGames}
+              onChange={handleFieldChange}
+              onAdjust={adjustField}
+              onClear={clearField}
+              steps={[-10, -1, 1, 10]}
+              compact
+            />
+            <StepperField
+              label="BIG回数"
+              name="bigCount"
+              value={input.bigCount}
+              onChange={handleFieldChange}
+              onAdjust={adjustField}
+              onClear={clearField}
+              steps={[-1, 1]}
+              compact
+            />
+            <StepperField
+              label="REG回数"
+              name="regCount"
+              value={input.regCount}
+              onChange={handleFieldChange}
+              onAdjust={adjustField}
+              onClear={clearField}
+              steps={[-1, 1]}
+              compact
+            />
           </div>
 
-          <Accordion title={`特定ボーナス履歴 (${input.specialBonuses.length})`} subtitle="確認できたボーナスだけ積み上げます" testId="special-bonus-history">
-            <div className="space-y-3">
-              {input.specialBonuses.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
-              {input.specialBonuses.map((entry) => (
-                <EventCard
-                  key={entry.id}
-                  title={`${entry.trigger} / ${entry.bonusType} / ${entry.bonusColor}`}
-                  onDelete={() => removeListEntry('specialBonuses', entry.id)}
+          <Accordion title="ボーナス詳細" subtitle="BIGビタとREG中の記録、特定ボーナス履歴をまとめます" defaultOpen testId="bonus-detail-accordion">
+            <div className="space-y-4">
+              <div className={twoColumnCompactGridClass}>
+                <StepperField
+                  label="BIGビタ分母"
+                  name="bigBitaTrialCount"
+                  value={input.bigBitaTrialCount}
+                  onChange={handleFieldChange}
+                  onAdjust={adjustField}
+                  onClear={clearField}
+                  steps={[-1, 1]}
+                  compact
                 />
-              ))}
+                <StepperField
+                  label="BIGビタ成功"
+                  name="bigBitaSuccessCount"
+                  value={input.bigBitaSuccessCount}
+                  onChange={handleFieldChange}
+                  onAdjust={adjustField}
+                  onClear={clearField}
+                  steps={[-1, 1]}
+                  compact
+                />
+                <StepperField
+                  label="REGゲーム数"
+                  name="regGameCount"
+                  value={input.regGameCount}
+                  onChange={handleFieldChange}
+                  onAdjust={adjustField}
+                  onClear={clearField}
+                  steps={[-1, 1]}
+                  compact
+                />
+                <StepperField
+                  label="REG斜め青7"
+                  name="regDiagonalBlue7Count"
+                  value={input.regDiagonalBlue7Count}
+                  onChange={handleFieldChange}
+                  onAdjust={adjustField}
+                  onClear={clearField}
+                  steps={[-1, 1]}
+                  compact
+                />
+              </div>
+
+              <StepperField
+                label="REG平行青7"
+                name="regParallelBlue7Count"
+                value={input.regParallelBlue7Count}
+                onChange={handleFieldChange}
+                onAdjust={adjustField}
+                onClear={clearField}
+                steps={[-1, 1]}
+              />
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="text-sm font-black text-slate-800">特定ボーナスを追加</div>
+                <div className="mt-3 space-y-3">
+                  <LabeledField label="当選契機" fieldId="bonus-trigger">
+                    <select
+                      value={bonusDraft.trigger}
+                      onChange={(event) => setBonusDraft((prev) => ({ ...prev, trigger: event.target.value }))}
+                      className={selectClass}
+                    >
+                      {UMINEKO2_BONUS_TRIGGER_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </select>
+                  </LabeledField>
+                  <LabeledField label="BB / REG" fieldId="bonus-type">
+                    <select
+                      value={bonusDraft.bonusType}
+                      onChange={(event) => {
+                        const nextType = event.target.value;
+                        setBonusDraft((prev) => ({
+                          ...prev,
+                          bonusType: nextType,
+                          bonusColor: getBonusColorOptions(nextType)[0]
+                        }));
+                      }}
+                      className={selectClass}
+                    >
+                      {UMINEKO2_BONUS_TYPE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </select>
+                  </LabeledField>
+                  <LabeledField label="当選色" fieldId="bonus-color">
+                    <select
+                      value={bonusDraft.bonusColor}
+                      onChange={(event) => setBonusDraft((prev) => ({ ...prev, bonusColor: event.target.value }))}
+                      className={selectClass}
+                    >
+                      {getBonusColorOptions(bonusDraft.bonusType).map((option) => <option key={option} value={option}>{option}</option>)}
+                    </select>
+                  </LabeledField>
+                  <button type="button" onClick={addSpecialBonus} className="min-h-11 w-full rounded-xl bg-indigo-600 px-4 text-sm font-black text-white">
+                    このボーナスを1件追加
+                  </button>
+                </div>
+              </div>
+
+              <Accordion title={`特定ボーナス履歴 (${input.specialBonuses.length})`} subtitle="確認できたボーナスだけ積み上げます" testId="special-bonus-history">
+                <div className="space-y-3">
+                  {input.specialBonuses.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
+                  {input.specialBonuses.map((entry) => (
+                    <EventCard
+                      key={entry.id}
+                      title={`${entry.trigger} / ${entry.bonusType} / ${entry.bonusColor}`}
+                      onDelete={() => removeListEntry('specialBonuses', entry.id)}
+                    />
+                  ))}
+                </div>
+              </Accordion>
             </div>
           </Accordion>
         </div>
@@ -287,44 +381,39 @@ export const SettingInferenceScreen = () => {
         testId="art-accordion"
       >
         <div className="space-y-4">
-          <StepperField
-            label="ARTゲーム数"
-            name="artGames"
-            value={input.artGames}
-            onChange={handleFieldChange}
-            onAdjust={adjustField}
-            onClear={clearField}
-            steps={[-10, -1, 1, 10]}
-            hint="ART関連の確率計算はこのゲーム数を分母に使います"
-          />
-          <StepperField
-            label="ART中共通ベル回数"
-            name="artCommonBellCount"
-            value={input.artCommonBellCount}
-            onChange={handleFieldChange}
-            onAdjust={adjustField}
-            onClear={clearField}
-            steps={[-1, 1]}
-          />
-          <StepperField
-            label="ART中ハズレ回数"
-            name="artMissCount"
-            value={input.artMissCount}
-            onChange={handleFieldChange}
-            onAdjust={adjustField}
-            onClear={clearField}
-            steps={[-1, 1]}
-          />
-          <StepperField
-            label="RB中斜め青7回数"
-            name="rbDiagonalBlue7Count"
-            value={input.rbDiagonalBlue7Count}
-            onChange={handleFieldChange}
-            onAdjust={adjustField}
-            onClear={clearField}
-            steps={[-1, 1]}
-            hint="現状は記録対象です。推測反映は今後拡張します。"
-          />
+          <div className={compactGridClass}>
+            <StepperField
+              label="ARTゲーム数"
+              name="artGames"
+              value={input.artGames}
+              onChange={handleFieldChange}
+              onAdjust={adjustField}
+              onClear={clearField}
+              steps={[-10, -1, 1, 10]}
+              hint="ART分母"
+              compact
+            />
+            <StepperField
+              label="ART中共通ベル回数"
+              name="artCommonBellCount"
+              value={input.artCommonBellCount}
+              onChange={handleFieldChange}
+              onAdjust={adjustField}
+              onClear={clearField}
+              steps={[-1, 1]}
+              compact
+            />
+            <StepperField
+              label="ART中ハズレ回数"
+              name="artMissCount"
+              value={input.artMissCount}
+              onChange={handleFieldChange}
+              onAdjust={adjustField}
+              onClear={clearField}
+              steps={[-1, 1]}
+              compact
+            />
+          </div>
         </div>
       </Accordion>
 
@@ -335,71 +424,88 @@ export const SettingInferenceScreen = () => {
         testId="normal-accordion"
       >
         <div className="space-y-4">
-          <StepperField
-            label="1枚役A回数"
-            name="oneRoleACount"
-            value={input.oneRoleACount}
-            onChange={handleFieldChange}
-            onAdjust={adjustField}
-            onClear={clearField}
-            steps={[-1, 1]}
-            hint="記録対象。推測反映は今後拡張します。"
-          />
-          <StepperField
-            label="1枚役B回数"
-            name="oneRoleBCount"
-            value={input.oneRoleBCount}
-            onChange={handleFieldChange}
-            onAdjust={adjustField}
-            onClear={clearField}
-            steps={[-1, 1]}
-            hint="記録対象。推測反映は今後拡張します。"
-          />
-          <StepperField
-            label="1枚役C回数"
-            name="oneRoleCCount"
-            value={input.oneRoleCCount}
-            onChange={handleFieldChange}
-            onAdjust={adjustField}
-            onClear={clearField}
-            steps={[-1, 1]}
-            hint="記録対象。推測反映は今後拡張します。"
-          />
-          <StepperField
-            label="確定役A回数"
-            name="confirmedRoleACount"
-            value={input.confirmedRoleACount}
-            onChange={handleFieldChange}
-            onAdjust={adjustField}
-            onClear={clearField}
-            steps={[-1, 1]}
-            hint="記録対象。推測反映は今後拡張します。"
-          />
-
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="text-sm font-black text-slate-800">ステージチェンジ時のロゴ発光</div>
-            <div className="mt-3 space-y-3">
-              <select value={logoDraft} onChange={(event) => setLogoDraft(event.target.value)} className={selectClass}>
-                {UMINEKO2_LOGO_FLASH_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
-              </select>
-              <button type="button" onClick={addLogoFlashEvent} className="min-h-11 w-full rounded-xl bg-slate-900 px-4 text-sm font-black text-white">
-                このイベントを1件追加
-              </button>
+            <div className="text-sm font-black text-slate-800">通常時小役</div>
+            <p className="mt-1 text-xs text-slate-500">1枚役A/B/C と確定役Aをまとめて記録します。推測反映は今後拡張します。</p>
+            <div className={`mt-3 ${twoColumnCompactGridClass}`}>
+              <StepperField
+                label="1枚役A"
+                name="oneRoleACount"
+                value={input.oneRoleACount}
+                onChange={handleFieldChange}
+                onAdjust={adjustField}
+                onClear={clearField}
+                steps={[-1, 1]}
+                compact
+              />
+              <StepperField
+                label="1枚役B"
+                name="oneRoleBCount"
+                value={input.oneRoleBCount}
+                onChange={handleFieldChange}
+                onAdjust={adjustField}
+                onClear={clearField}
+                steps={[-1, 1]}
+                compact
+              />
+              <StepperField
+                label="1枚役C"
+                name="oneRoleCCount"
+                value={input.oneRoleCCount}
+                onChange={handleFieldChange}
+                onAdjust={adjustField}
+                onClear={clearField}
+                steps={[-1, 1]}
+                compact
+              />
+              <StepperField
+                label="確定役A"
+                name="confirmedRoleACount"
+                value={input.confirmedRoleACount}
+                onChange={handleFieldChange}
+                onAdjust={adjustField}
+                onClear={clearField}
+                steps={[-1, 1]}
+                compact
+              />
             </div>
           </div>
 
-          <Accordion title={`ロゴ発光履歴 (${input.logoFlashEvents.length})`} subtitle="1回ごとの発光パターンを残します">
-            <div className="space-y-3">
-              {input.logoFlashEvents.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
-              {input.logoFlashEvents.map((entry) => (
-                <EventCard
-                  key={entry.id}
-                  title={`ロゴ発光: ${entry.pattern}`}
-                  onDelete={() => removeListEntry('logoFlashEvents', entry.id)}
-                />
-              ))}
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="text-sm font-black text-slate-800">ステージチェンジ時のロゴ発光</div>
+            <p className="mt-1 text-xs text-slate-500">
+              1geki の判別ツールに合わせて、発光総数と「小 / 大」を回数で記録します。発光なしはサンプルから除外です。
+            </p>
+            <div className="mt-3 space-y-3">
+              <StepperField
+                label="ロゴ発光回数"
+                name="logoFlashTotalCount"
+                value={input.logoFlashTotalCount}
+                onChange={handleFieldChange}
+                onAdjust={adjustField}
+                onClear={clearField}
+                steps={[-1, 1]}
+              />
+              <StepperField
+                label="ロゴ発光（小）"
+                name="logoFlashSmallCount"
+                value={input.logoFlashSmallCount}
+                onChange={handleFieldChange}
+                onAdjust={adjustField}
+                onClear={clearField}
+                steps={[-1, 1]}
+              />
+              <StepperField
+                label="ロゴ発光（大）"
+                name="logoFlashLargeCount"
+                value={input.logoFlashLargeCount}
+                onChange={handleFieldChange}
+                onAdjust={adjustField}
+                onClear={clearField}
+                steps={[-1, 1]}
+              />
             </div>
-          </Accordion>
+          </div>
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="text-sm font-black text-slate-800">周期天井到達時の真実ポイント</div>
@@ -504,6 +610,16 @@ export const SettingInferenceScreen = () => {
           入力内容は `localStorage` に自動保存されます。ボーナス履歴や示唆イベントも再読込後に復元されます。
         </p>
       </section>
+
+      {showResetConfirm && (
+        <ConfirmModal
+          title="入力をリセットしますか？"
+          body="現在のドラフト入力、追加済みのボーナス履歴、示唆イベントもすべて初期化されます。"
+          confirmLabel="リセットする"
+          onConfirm={handleResetConfirm}
+          onCancel={() => setShowResetConfirm(false)}
+        />
+      )}
     </div>
   );
 };

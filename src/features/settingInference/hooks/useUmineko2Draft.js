@@ -20,9 +20,13 @@ const createEntryId = () => `entry-${crypto.randomUUID()}`;
 
 export const useUmineko2Draft = () => {
   const initialDraft = loadSettingInferenceDraft();
+  const migratedInput = {
+    ...initialDraft.input,
+    regDiagonalBlue7Count: initialDraft.input.regDiagonalBlue7Count || initialDraft.input.rbDiagonalBlue7Count || ''
+  };
   const [input, setInput] = useState({
     ...UMINEKO2_PHASE1_DEFAULT_INPUT,
-    ...initialDraft.input
+    ...migratedInput
   });
   const [sessionId, setSessionId] = useState(initialDraft.sessionId || null);
 

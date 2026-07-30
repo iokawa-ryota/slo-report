@@ -10,18 +10,19 @@ export const StepperField = ({
   onAdjust,
   onClear,
   steps,
-  hint
+  hint,
+  compact = false
 }) => (
-  <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+  <div className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${compact ? 'p-3' : 'p-4'}`}>
     <div className="flex items-start justify-between gap-3">
       <div>
-        <label htmlFor={name} className="block text-xs font-black text-slate-700">{label}</label>
+        <label htmlFor={name} className={`block font-black text-slate-700 ${compact ? 'text-[11px]' : 'text-xs'}`}>{label}</label>
         {hint && <p className="mt-1 text-[11px] text-slate-400">{hint}</p>}
       </div>
       <button
         type="button"
         onClick={() => onClear(name)}
-        className="min-h-11 rounded-xl px-3 text-[11px] font-bold text-slate-500"
+        className={`rounded-xl px-3 font-bold text-slate-500 ${compact ? 'min-h-9 text-[10px]' : 'min-h-11 text-[11px]'}`}
       >
         クリア
       </button>
@@ -36,7 +37,7 @@ export const StepperField = ({
         value={value}
         onChange={onChange}
         placeholder="未入力"
-        className="h-12 w-full rounded-xl border border-slate-200 px-4 text-center text-lg font-black outline-none focus:border-indigo-500"
+        className={`w-full rounded-xl border border-slate-200 px-3 text-center font-black outline-none focus:border-indigo-500 ${compact ? 'h-11 text-base' : 'h-12 px-4 text-lg'}`}
       />
     </div>
 
@@ -48,7 +49,7 @@ export const StepperField = ({
             key={step}
             type="button"
             onClick={() => onAdjust(name, step)}
-            className={baseButtonClass}
+            className={`${baseButtonClass} ${compact ? 'min-h-9 min-w-9 text-xs' : ''}`}
           >
             {`${prefix}${step}`}
           </button>

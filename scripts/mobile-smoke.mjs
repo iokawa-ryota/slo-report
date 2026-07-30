@@ -107,9 +107,9 @@ async function run() {
     await page.getByRole('textbox', { name: '総ゲーム数' }).fill('3200');
     await page.getByRole('textbox', { name: 'BIG回数' }).fill('10');
     await page.getByRole('textbox', { name: 'REG回数' }).fill('11');
-    await page.getByRole('textbox', { name: 'ARTゲーム数' }).fill('600');
-    await page.getByRole('textbox', { name: 'ART中共通ベル回数' }).fill('28');
-    await page.getByRole('textbox', { name: 'ART中ハズレ回数' }).fill('10');
+    await page.locator('input[name="artGames"]').fill('600');
+    await page.locator('input[name="artCommonBellCount"]').fill('28');
+    await page.locator('input[name="artMissCount"]').fill('10');
 
     const inferenceDraft = await page.evaluate(() => JSON.parse(localStorage.getItem('setting-inference-draft-v1:umineko2') || '{}'));
     if (inferenceDraft.input?.totalGames !== '3200' || inferenceDraft.input?.artGames !== '600') {
