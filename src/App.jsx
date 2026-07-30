@@ -1,15 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { 
   PlusCircle, 
-  Target, 
-  History,
-  LayoutDashboard,
-  Menu,
   X,
-  Layers,
-  LogOut,
   Loader,
-  Cpu
 } from 'lucide-react';
 import { MACHINE_OPTIONS, getMachineConfig } from './config/machineConfig';
 import { calculateInputStats, calculateLoss } from './utils/recordCalculations';
@@ -17,9 +10,11 @@ import { subscribeToRecords, createRecord, updateRecord, deleteRecord as deleteR
 import { loginAnonymously, subscribeToAuthState, logout, signInWithGoogle } from './firebase/auth';
 import { isFirebaseConfigured } from './firebase/config';
 import { SettingInferenceScreen } from './features/settingInference/components/SettingInferenceScreen';
+import { AppHeader } from './components/AppHeader';
+import { AppSidebar } from './components/AppSidebar';
+import { DateFilterPanel } from './components/DateFilterPanel';
 import {
   ChartSection,
-  NavItem,
   StatCard,
   RecordItem,
   InputSelect,
@@ -491,112 +486,52 @@ const App = () => {
         />
       )}
 
-      <aside className={`
-        app-sidebar fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 transition-transform duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:self-start lg:overflow-y-auto lg:translate-x-0
-        ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="p-6 h-full flex flex-col">
-          <div className="flex items-center justify-between mb-10">
-            <div className="flex items-center gap-3">
-              <div className="bg-indigo-600 p-2 rounded-xl">
-                <Target className="text-white" size={24} />
-              </div>
-              <h1 className="text-xl font-black text-white tracking-tighter">VERSUS<br/><span className="text-indigo-400">ANALYZER</span></h1>
-            </div>
-            <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden p-2 text-slate-400 hover:text-white">
-              <X size={20} />
-            </button>
-          </div>
-          
-          <nav className="flex-1 space-y-1">
-            <NavItem icon={<LayoutDashboard size={18}/>} label="総合ダッシュボード" active={activeTab === 'dashboard'} onClick={() => {setActiveTab('dashboard'); setIsSidebarOpen(false);}} />
-            <div className="pt-4 pb-2 text-[10px] font-black text-slate-500 uppercase tracking-widest px-3">機種別統計</div>
-            {MACHINE_OPTIONS.map(m => (
-              <NavItem 
-                key={m} 
-                icon={<Layers size={18}/>} 
-                label={m} 
-                active={activeTab === 'machine-stats' && selectedMachineTab === m} 
-                onClick={() => {setActiveTab('machine-stats'); setSelectedMachineTab(m); setIsSidebarOpen(false);}} 
-              />
-            ))}
-            <div className="pt-4 pb-2 text-[10px] font-black text-slate-500 uppercase tracking-widest px-3">その他</div>
-            <NavItem icon={<Cpu size={18}/>} label="設定推測" active={activeTab === 'setting-inference'} onClick={() => {setActiveTab('setting-inference'); setIsSidebarOpen(false);}} />
-            <NavItem icon={<History size={18}/>} label="全履歴一覧" active={activeTab === 'history'} onClick={() => {setActiveTab('history'); setIsSidebarOpen(false);}} />
-          </nav>
-
-          <div className="pt-6 border-t border-slate-800 space-y-3">
-            <div className="text-[10px] text-slate-500 font-bold text-center pb-3">
-              {isFirebaseConfigured ? 'v9.0.0 - Firebase Sync' : 'v9.0.0 - Local Save Mode'}
-            </div>
-            {isFirebaseConfigured && (
-              <button
-                onClick={() => logout()}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors text-slate-300 text-xs font-semibold"
-              >
-                <LogOut size={14} />
-                ログアウト
-              </button>
-            )}
-          </div>
-        </div>
-      </aside>
+      <AppSidebar
+        activeTab={activeTab}
+        isFirebaseConfigured={isFirebaseConfigured}
+        isOpen={isSidebarOpen}
+        machineOptions={MACHINE_OPTIONS}
+        onClose={() => setIsSidebarOpen(false)}
+        onLogout={logout}
+        onSelectDashboard={() => {
+          setActiveTab('dashboard');
+          setIsSidebarOpen(false);
+        }}
+        onSelectHistory={() => {
+          setActiveTab('history');
+          setIsSidebarOpen(false);
+        }}
+        onSelectMachine={(machine) => {
+          setActiveTab('machine-stats');
+          setSelectedMachineTab(machine);
+          setIsSidebarOpen(false);
+        }}
+        onSelectSettingInference={() => {
+          setActiveTab('setting-inference');
+          setIsSidebarOpen(false);
+        }}
+        selectedMachineTab={selectedMachineTab}
+      />
 
       <main className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden">
-        <header className="fixed top-0 left-0 right-0 lg:left-64 bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center z-30">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
-              <Menu size={24} />
-            </button>
-            <div className="font-black text-slate-800 text-sm flex items-center gap-2">
-              {activeTab === 'dashboard' && '総合ダッシュボード'}
-              {activeTab === 'machine-stats' && `機種統計: ${selectedMachineTab}`}
-              {activeTab === 'setting-inference' && '設定推測'}
-              {activeTab === 'history' && '全履歴'}
-            </div>
-          </div>
-          <button 
-            onClick={openNewRecordForm}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-black text-xs shadow-md hover:bg-indigo-700 transition-all flex items-center gap-2"
-          >
-            <PlusCircle size={16} /> <span className="hidden sm:inline">データ入力</span>
-          </button>
-        </header>
+        <AppHeader
+          activeTab={activeTab}
+          selectedMachineTab={selectedMachineTab}
+          onOpenSidebar={() => setIsSidebarOpen(true)}
+          onCreateRecord={openNewRecordForm}
+        />
 
         <div className="pt-20 p-6 md:p-8 max-w-6xl mx-auto w-full">
-          <div className="mb-6 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-            <div className="text-[10px] font-black text-slate-500 uppercase mb-3">期間フィルター</div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <label className="text-[9px] font-bold text-slate-600 block mb-1">開始日</label>
-                <input 
-                  type="date" 
-                  value={dateRangeStart}
-                  onChange={(e) => setDateRangeStart(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[11px] font-semibold"
-                />
-              </div>
-              <div>
-                <label className="text-[9px] font-bold text-slate-600 block mb-1">終了日</label>
-                <input 
-                  type="date" 
-                  value={dateRangeEnd}
-                  onChange={(e) => setDateRangeEnd(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-[11px] font-semibold"
-                />
-              </div>
-              {(dateRangeStart || dateRangeEnd) && (
-                <div className="sm:col-span-2">
-                  <button 
-                    onClick={() => {setDateRangeStart(''); setDateRangeEnd('');}}
-                    className="w-full px-3 py-2 bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold hover:bg-slate-300 transition-all"
-                  >
-                    フィルターをリセット
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+          <DateFilterPanel
+            startDate={dateRangeStart}
+            endDate={dateRangeEnd}
+            onStartDateChange={setDateRangeStart}
+            onEndDateChange={setDateRangeEnd}
+            onReset={() => {
+              setDateRangeStart('');
+              setDateRangeEnd('');
+            }}
+          />
 
           {activeTab === 'dashboard' && (
             <>

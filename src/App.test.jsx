@@ -201,8 +201,8 @@ describe('App', () => {
 
     await user.click(screen.getAllByRole('button', { name: '設定推測' })[0]);
 
-    expect(await screen.findByText('うみねこのなく頃に2')).toBeInTheDocument();
-    expect(screen.getByText('ローカル利用中')).toBeInTheDocument();
+    expect(await screen.findByText('入力')).toBeInTheDocument();
+    expect(screen.getByText('未入力は除外、0 は実測値として扱います。入力内容は自動保存されます。')).toBeInTheDocument();
 
     const totalGamesInput = screen.getByRole('textbox', { name: '総ゲーム数' });
     await user.type(totalGamesInput, '2000');

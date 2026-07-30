@@ -1,8 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
   ChevronDown,
-  Cloud,
-  CloudOff,
   Cpu,
   RefreshCw,
   Save,
@@ -201,22 +199,6 @@ export const SettingInferenceScreen = () => {
 
   return (
     <div className="space-y-6">
-      <section className={`${sectionClass} bg-slate-900 text-white`}>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="text-[11px] font-black uppercase tracking-widest text-indigo-300">Setting Inference</div>
-            <h2 className="mt-2 text-2xl font-black tracking-tight">うみねこのなく頃に2</h2>
-            <p className="mt-2 text-sm text-slate-300">
-              1geki の設定差要素に合わせて、ボーナス・ART・通常系を記録できます。
-            </p>
-          </div>
-          <div className={`flex min-h-11 items-center gap-2 rounded-2xl px-3 py-2 text-xs font-bold ${syncEnabled ? 'bg-emerald-500/15 text-emerald-200' : 'bg-white/10 text-slate-300'}`}>
-            {syncEnabled ? <Cloud size={16} /> : <CloudOff size={16} />}
-            {syncEnabled ? 'Firestore保存可' : 'ローカル利用中'}
-          </div>
-        </div>
-      </section>
-
       <section className={sectionClass}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
