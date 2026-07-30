@@ -21,7 +21,7 @@ export const StepperField = ({
       </div>
       <button
         type="button"
-        onClick={() => onClear(name)}
+        onClick={() => onClear(name, label)}
         className={`rounded-xl px-3 font-bold text-slate-500 ${compact ? 'min-h-9 text-[10px]' : 'min-h-11 text-[11px]'}`}
       >
         クリア

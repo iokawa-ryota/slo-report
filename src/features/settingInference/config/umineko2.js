@@ -43,7 +43,6 @@ export const UMINEKO2_PHASE1_DEFAULT_INPUT = {
   artGames: '',
   artCommonBellCount: '',
   artMissCount: '',
-  logoFlashTotalCount: '',
   logoFlashSmallCount: '',
   logoFlashLargeCount: '',
   oneRoleACount: '',

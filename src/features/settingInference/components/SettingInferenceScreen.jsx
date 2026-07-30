@@ -127,6 +127,7 @@ export const SettingInferenceScreen = () => {
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [pendingClearField, setPendingClearField] = useState(null);
   const [bonusDraft, setBonusDraft] = useState(createDefaultBonusDraft);
   const [truthPointDraft, setTruthPointDraft] = useState(UMINEKO2_TRUTH_POINT_OPTIONS[0]);
   const [level2NaviDraft, setLevel2NaviDraft] = useState(UMINEKO2_LEVEL2_NAVI_OPTIONS[0]);
@@ -185,6 +186,19 @@ export const SettingInferenceScreen = () => {
     setSaveError('');
   };
 
+  const requestClearField = (name, label) => {
+    if (input[name] === '' || input[name] === null || input[name] === undefined) {
+      return;
+    }
+    setPendingClearField({ name, label });
+  };
+
+  const handleClearFieldConfirm = () => {
+    if (!pendingClearField) return;
+    clearField(pendingClearField.name);
+    setPendingClearField(null);
+  };
+
   return (
     <div className="space-y-6">
       <section className={`${sectionClass} bg-slate-900 text-white`}>
@@ -233,7 +247,7 @@ export const SettingInferenceScreen = () => {
               value={input.totalGames}
               onChange={handleFieldChange}
               onAdjust={adjustField}
-              onClear={clearField}
+              onClear={requestClearField}
               steps={[-10, -1, 1, 10]}
               compact
             />
@@ -243,7 +257,7 @@ export const SettingInferenceScreen = () => {
               value={input.bigCount}
               onChange={handleFieldChange}
               onAdjust={adjustField}
-              onClear={clearField}
+              onClear={requestClearField}
               steps={[-1, 1]}
               compact
             />
@@ -253,7 +267,7 @@ export const SettingInferenceScreen = () => {
               value={input.regCount}
               onChange={handleFieldChange}
               onAdjust={adjustField}
-              onClear={clearField}
+              onClear={requestClearField}
               steps={[-1, 1]}
               compact
             />
@@ -268,7 +282,7 @@ export const SettingInferenceScreen = () => {
                   value={input.bigBitaTrialCount}
                   onChange={handleFieldChange}
                   onAdjust={adjustField}
-                  onClear={clearField}
+                  onClear={requestClearField}
                   steps={[-1, 1]}
                   compact
                 />
@@ -278,7 +292,7 @@ export const SettingInferenceScreen = () => {
                   value={input.bigBitaSuccessCount}
                   onChange={handleFieldChange}
                   onAdjust={adjustField}
-                  onClear={clearField}
+                  onClear={requestClearField}
                   steps={[-1, 1]}
                   compact
                 />
@@ -288,7 +302,7 @@ export const SettingInferenceScreen = () => {
                   value={input.regGameCount}
                   onChange={handleFieldChange}
                   onAdjust={adjustField}
-                  onClear={clearField}
+                  onClear={requestClearField}
                   steps={[-1, 1]}
                   compact
                 />
@@ -298,7 +312,7 @@ export const SettingInferenceScreen = () => {
                   value={input.regDiagonalBlue7Count}
                   onChange={handleFieldChange}
                   onAdjust={adjustField}
-                  onClear={clearField}
+                  onClear={requestClearField}
                   steps={[-1, 1]}
                   compact
                 />
@@ -310,7 +324,7 @@ export const SettingInferenceScreen = () => {
                 value={input.regParallelBlue7Count}
                 onChange={handleFieldChange}
                 onAdjust={adjustField}
-                onClear={clearField}
+                onClear={requestClearField}
                 steps={[-1, 1]}
               />
 
@@ -388,7 +402,7 @@ export const SettingInferenceScreen = () => {
               value={input.artGames}
               onChange={handleFieldChange}
               onAdjust={adjustField}
-              onClear={clearField}
+              onClear={requestClearField}
               steps={[-10, -1, 1, 10]}
               hint="ART分母"
               compact
@@ -399,7 +413,7 @@ export const SettingInferenceScreen = () => {
               value={input.artCommonBellCount}
               onChange={handleFieldChange}
               onAdjust={adjustField}
-              onClear={clearField}
+              onClear={requestClearField}
               steps={[-1, 1]}
               compact
             />
@@ -409,7 +423,7 @@ export const SettingInferenceScreen = () => {
               value={input.artMissCount}
               onChange={handleFieldChange}
               onAdjust={adjustField}
-              onClear={clearField}
+              onClear={requestClearField}
               steps={[-1, 1]}
               compact
             />
@@ -425,7 +439,7 @@ export const SettingInferenceScreen = () => {
       >
         <div className="space-y-4">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="text-sm font-black text-slate-800">通常時小役</div>
+            <div className="text-sm font-black text-slate-800">特殊条件</div>
             <p className="mt-1 text-xs text-slate-500">1枚役A/B/C と確定役Aをまとめて記録します。推測反映は今後拡張します。</p>
             <div className={`mt-3 ${twoColumnCompactGridClass}`}>
               <StepperField
@@ -434,7 +448,7 @@ export const SettingInferenceScreen = () => {
                 value={input.oneRoleACount}
                 onChange={handleFieldChange}
                 onAdjust={adjustField}
-                onClear={clearField}
+                onClear={requestClearField}
                 steps={[-1, 1]}
                 compact
               />
@@ -444,7 +458,7 @@ export const SettingInferenceScreen = () => {
                 value={input.oneRoleBCount}
                 onChange={handleFieldChange}
                 onAdjust={adjustField}
-                onClear={clearField}
+                onClear={requestClearField}
                 steps={[-1, 1]}
                 compact
               />
@@ -454,7 +468,7 @@ export const SettingInferenceScreen = () => {
                 value={input.oneRoleCCount}
                 onChange={handleFieldChange}
                 onAdjust={adjustField}
-                onClear={clearField}
+                onClear={requestClearField}
                 steps={[-1, 1]}
                 compact
               />
@@ -464,7 +478,7 @@ export const SettingInferenceScreen = () => {
                 value={input.confirmedRoleACount}
                 onChange={handleFieldChange}
                 onAdjust={adjustField}
-                onClear={clearField}
+                onClear={requestClearField}
                 steps={[-1, 1]}
                 compact
               />
@@ -474,26 +488,18 @@ export const SettingInferenceScreen = () => {
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="text-sm font-black text-slate-800">ステージチェンジ時のロゴ発光</div>
             <p className="mt-1 text-xs text-slate-500">
-              1geki の判別ツールに合わせて、発光総数と「小 / 大」を回数で記録します。発光なしはサンプルから除外です。
+              発光なしはサンプルから除外し、ロゴ発光「小 / 大」の内訳だけ記録します。小と大の合計から割合を見ます。
             </p>
-            <div className="mt-3 space-y-3">
-              <StepperField
-                label="ロゴ発光回数"
-                name="logoFlashTotalCount"
-                value={input.logoFlashTotalCount}
-                onChange={handleFieldChange}
-                onAdjust={adjustField}
-                onClear={clearField}
-                steps={[-1, 1]}
-              />
+            <div className={`mt-3 ${twoColumnCompactGridClass}`}>
               <StepperField
                 label="ロゴ発光（小）"
                 name="logoFlashSmallCount"
                 value={input.logoFlashSmallCount}
                 onChange={handleFieldChange}
                 onAdjust={adjustField}
-                onClear={clearField}
+                onClear={requestClearField}
                 steps={[-1, 1]}
+                compact
               />
               <StepperField
                 label="ロゴ発光（大）"
@@ -501,61 +507,68 @@ export const SettingInferenceScreen = () => {
                 value={input.logoFlashLargeCount}
                 onChange={handleFieldChange}
                 onAdjust={adjustField}
-                onClear={clearField}
+                onClear={requestClearField}
                 steps={[-1, 1]}
+                compact
               />
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="text-sm font-black text-slate-800">周期天井到達時の真実ポイント</div>
-            <div className="mt-3 space-y-3">
-              <select value={truthPointDraft} onChange={(event) => setTruthPointDraft(event.target.value)} className={selectClass}>
-                {UMINEKO2_TRUTH_POINT_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
-              </select>
-              <button type="button" onClick={addTruthPointEvent} className="min-h-11 w-full rounded-xl bg-slate-900 px-4 text-sm font-black text-white">
-                このイベントを1件追加
-              </button>
+          <div className={twoColumnCompactGridClass}>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="text-sm font-black text-slate-800">特殊条件</div>
+              <p className="mt-1 text-xs text-slate-500">周期天井到達時の真実ポイントを1件ずつ記録します。</p>
+              <div className="mt-3 space-y-3">
+                <select value={truthPointDraft} onChange={(event) => setTruthPointDraft(event.target.value)} className={selectClass}>
+                  {UMINEKO2_TRUTH_POINT_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                </select>
+                <button type="button" onClick={addTruthPointEvent} className="min-h-11 w-full rounded-xl bg-slate-900 px-4 text-sm font-black text-white">
+                  このイベントを1件追加
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <div className="text-sm font-black text-slate-800">特殊条件</div>
+              <p className="mt-1 text-xs text-slate-500">レベル2ナビ発生抽選のパターンを1件ずつ記録します。</p>
+              <div className="mt-3 space-y-3">
+                <select value={level2NaviDraft} onChange={(event) => setLevel2NaviDraft(event.target.value)} className={selectClass}>
+                  {UMINEKO2_LEVEL2_NAVI_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
+                </select>
+                <button type="button" onClick={addLevel2NaviEvent} className="min-h-11 w-full rounded-xl bg-slate-900 px-4 text-sm font-black text-white">
+                  このイベントを1件追加
+                </button>
+              </div>
             </div>
           </div>
 
-          <Accordion title={`真実ポイント履歴 (${input.truthPointEvents.length})`} subtitle="到達したポイントを1回ごとに残します">
-            <div className="space-y-3">
-              {input.truthPointEvents.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
-              {input.truthPointEvents.map((entry) => (
-                <EventCard
-                  key={entry.id}
-                  title={`真実ポイント: ${entry.point}`}
-                  onDelete={() => removeListEntry('truthPointEvents', entry.id)}
-                />
-              ))}
-            </div>
-          </Accordion>
+          <div className={twoColumnCompactGridClass}>
+            <Accordion title={`真実ポイント履歴 (${input.truthPointEvents.length})`} subtitle="到達したポイントを1回ごとに残します">
+              <div className="space-y-3">
+                {input.truthPointEvents.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
+                {input.truthPointEvents.map((entry) => (
+                  <EventCard
+                    key={entry.id}
+                    title={`真実ポイント: ${entry.point}`}
+                    onDelete={() => removeListEntry('truthPointEvents', entry.id)}
+                  />
+                ))}
+              </div>
+            </Accordion>
 
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="text-sm font-black text-slate-800">レベル2ナビ発生抽選</div>
-            <div className="mt-3 space-y-3">
-              <select value={level2NaviDraft} onChange={(event) => setLevel2NaviDraft(event.target.value)} className={selectClass}>
-                {UMINEKO2_LEVEL2_NAVI_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
-              </select>
-              <button type="button" onClick={addLevel2NaviEvent} className="min-h-11 w-full rounded-xl bg-slate-900 px-4 text-sm font-black text-white">
-                このイベントを1件追加
-              </button>
-            </div>
+            <Accordion title={`レベル2ナビ履歴 (${input.level2NaviEvents.length})`} subtitle="確認できたナビを1回ごとに残します">
+              <div className="space-y-3">
+                {input.level2NaviEvents.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
+                {input.level2NaviEvents.map((entry) => (
+                  <EventCard
+                    key={entry.id}
+                    title={`レベル2ナビ: ${entry.pattern}`}
+                    onDelete={() => removeListEntry('level2NaviEvents', entry.id)}
+                  />
+                ))}
+              </div>
+            </Accordion>
           </div>
-
-          <Accordion title={`レベル2ナビ履歴 (${input.level2NaviEvents.length})`} subtitle="確認できたナビを1回ごとに残します">
-            <div className="space-y-3">
-              {input.level2NaviEvents.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
-              {input.level2NaviEvents.map((entry) => (
-                <EventCard
-                  key={entry.id}
-                  title={`レベル2ナビ: ${entry.pattern}`}
-                  onDelete={() => removeListEntry('level2NaviEvents', entry.id)}
-                />
-              ))}
-            </div>
-          </Accordion>
         </div>
       </Accordion>
 
@@ -618,6 +631,16 @@ export const SettingInferenceScreen = () => {
           confirmLabel="リセットする"
           onConfirm={handleResetConfirm}
           onCancel={() => setShowResetConfirm(false)}
+        />
+      )}
+
+      {pendingClearField && (
+        <ConfirmModal
+          title={`${pendingClearField.label} をクリアしますか？`}
+          body="この項目は未入力に戻ります。"
+          confirmLabel="クリアする"
+          onConfirm={handleClearFieldConfirm}
+          onCancel={() => setPendingClearField(null)}
         />
       )}
     </div>

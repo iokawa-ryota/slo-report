@@ -250,4 +250,24 @@ describe('App', () => {
     expect(screen.getByText('単独 / REG / 白')).toBeInTheDocument();
   });
 
+  it('confirms before clearing a setting inference field', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: '設定推測' })[0]);
+
+    const totalGamesInput = await screen.findByRole('textbox', { name: '総ゲーム数' });
+    await user.clear(totalGamesInput);
+    await user.type(totalGamesInput, '3000');
+    await user.click(screen.getAllByRole('button', { name: 'クリア' })[0]);
+
+    expect(screen.getByText('総ゲーム数 をクリアしますか？')).toBeInTheDocument();
+    expect(totalGamesInput).toHaveValue('3000');
+
+    await user.click(screen.getByRole('button', { name: 'クリアする' }));
+
+    expect(screen.queryByText('総ゲーム数 をクリアしますか？')).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: '総ゲーム数' })).toHaveValue('');
+  });
+
 });
