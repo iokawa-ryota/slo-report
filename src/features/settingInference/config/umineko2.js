@@ -37,8 +37,58 @@ export const UMINEKO2_PHASE1_DEFAULT_INPUT = {
   regCount: '',
   artGames: '',
   artCommonBellCount: '',
-  artMissCount: ''
+  artMissCount: '',
+  oneRoleACount: '',
+  oneRoleBCount: '',
+  oneRoleCCount: '',
+  confirmedRoleACount: '',
+  rbDiagonalBlue7Count: '',
+  specialBonuses: [],
+  logoFlashEvents: [],
+  truthPointEvents: [],
+  level2NaviEvents: []
 };
+
+export const UMINEKO2_BONUS_TRIGGER_OPTIONS = [
+  'スイカ',
+  'チェリー',
+  '1枚役A',
+  '1枚役B',
+  '1枚役C',
+  'リプレイ',
+  'ベル',
+  '単独',
+  '確定役'
+];
+
+export const UMINEKO2_BONUS_TYPE_OPTIONS = ['BIG', 'REG'];
+
+export const UMINEKO2_BIG_COLOR_OPTIONS = ['赤異色', '赤同色', '白異色', '白同色'];
+export const UMINEKO2_REG_COLOR_OPTIONS = ['赤', '白'];
+
+export const UMINEKO2_LOGO_FLASH_OPTIONS = [
+  '発光なし',
+  '白',
+  '青',
+  '黄',
+  '緑',
+  '赤',
+  '虹'
+];
+
+export const UMINEKO2_TRUTH_POINT_OPTIONS = [
+  '100pt',
+  '200pt',
+  '300pt',
+  '400pt',
+  '500pt以上'
+];
+
+export const UMINEKO2_LEVEL2_NAVI_OPTIONS = [
+  '通常ナビ',
+  '赤ナビ',
+  '金ナビ'
+];
 
 export const UMINEKO2_PROBABILITIES = {
   big: {

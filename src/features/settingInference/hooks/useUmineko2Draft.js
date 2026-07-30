@@ -16,6 +16,8 @@ const normalizeTextValue = (value) => {
   return String(value);
 };
 
+const createEntryId = () => `entry-${crypto.randomUUID()}`;
+
 export const useUmineko2Draft = () => {
   const initialDraft = loadSettingInferenceDraft();
   const [input, setInput] = useState({
@@ -56,6 +58,35 @@ export const useUmineko2Draft = () => {
     });
   };
 
+  const addListEntry = (key, entry) => {
+    const nextEntry = {
+      id: createEntryId(),
+      createdAt: new Date().toISOString(),
+      ...entry
+    };
+    setInput((prev) => ({
+      ...prev,
+      [key]: [...(prev[key] || []), nextEntry]
+    }));
+    return nextEntry.id;
+  };
+
+  const updateListEntry = (key, id, patch) => {
+    setInput((prev) => ({
+      ...prev,
+      [key]: (prev[key] || []).map((item) => (
+        item.id === id ? { ...item, ...patch } : item
+      ))
+    }));
+  };
+
+  const removeListEntry = (key, id) => {
+    setInput((prev) => ({
+      ...prev,
+      [key]: (prev[key] || []).filter((item) => item.id !== id)
+    }));
+  };
+
   const resetDraft = () => {
     setInput({ ...UMINEKO2_PHASE1_DEFAULT_INPUT });
     setSessionId(null);
@@ -71,6 +102,9 @@ export const useUmineko2Draft = () => {
     setFieldValue,
     clearField,
     adjustField,
+    addListEntry,
+    updateListEntry,
+    removeListEntry,
     resetDraft
   };
 };
