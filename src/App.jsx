@@ -35,6 +35,29 @@ import {
 } from './components/AppSections';
 
 const DEFAULT_DETAIL_FIELDS = { mid: true, right: true };
+const APP_UI_STATE_KEY = 'app-ui-state-v1';
+
+const loadUiState = () => {
+  if (typeof window === 'undefined') {
+    return {};
+  }
+
+  try {
+    return JSON.parse(sessionStorage.getItem(APP_UI_STATE_KEY) || '{}');
+  } catch {
+    return {};
+  }
+};
+
+const saveUiState = (patch) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const current = loadUiState();
+  sessionStorage.setItem(APP_UI_STATE_KEY, JSON.stringify({ ...current, ...patch }));
+};
+
 const createInitialFormData = () => ({
   date: new Date().toISOString().split('T')[0],
   machineName: MACHINE_OPTIONS[0],
@@ -69,6 +92,10 @@ const App = () => {
   const [records, setRecords] = useState([]);
   const [hasMigratedData, setHasMigratedData] = useState(false);
   const [allowGuestInference, setAllowGuestInference] = useState(false);
+  const [restoredScrollY, setRestoredScrollY] = useState(() => {
+    const uiState = loadUiState();
+    return Number.isFinite(uiState.scrollY) ? uiState.scrollY : null;
+  });
 
   // Firebase 認証の初期化
   useEffect(() => {
@@ -107,9 +134,15 @@ const App = () => {
       return unsubscribe;
     }
   }, [user]);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    const uiState = loadUiState();
+    return uiState.activeTab || 'dashboard';
+  });
   const [previousTab, setPreviousTab] = useState('dashboard');
-  const [selectedMachineTab, setSelectedMachineTab] = useState(MACHINE_OPTIONS[0]);
+  const [selectedMachineTab, setSelectedMachineTab] = useState(() => {
+    const uiState = loadUiState();
+    return uiState.selectedMachineTab || MACHINE_OPTIONS[0];
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [calcMode, setCalcMode] = useState('detail'); 
@@ -347,6 +380,51 @@ const App = () => {
   };
   const DetailSectionComponent = detailSectionComponents[currentConfig.detailVariant] || TechDetailSectionOther;
   const shouldShowLoginOverlay = !isLoading && !user && isFirebaseConfigured && !(allowGuestInference && activeTab === 'setting-inference');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    window.history.scrollRestoration = 'manual';
+
+    let ticking = false;
+    const persistScroll = () => {
+      if (ticking) return;
+      ticking = true;
+
+      window.requestAnimationFrame(() => {
+        saveUiState({ scrollY: window.scrollY });
+        ticking = false;
+      });
+    };
+
+    window.addEventListener('scroll', persistScroll, { passive: true });
+    window.addEventListener('beforeunload', persistScroll);
+
+    return () => {
+      window.removeEventListener('scroll', persistScroll);
+      window.removeEventListener('beforeunload', persistScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    saveUiState({ activeTab, selectedMachineTab });
+  }, [activeTab, selectedMachineTab]);
+
+  useEffect(() => {
+    if (restoredScrollY === null || isLoading || showForm) {
+      return;
+    }
+
+    const restore = () => {
+      window.scrollTo({ top: restoredScrollY, behavior: 'auto' });
+      setRestoredScrollY(null);
+    };
+
+    const timer = window.setTimeout(restore, 0);
+    return () => window.clearTimeout(timer);
+  }, [restoredScrollY, isLoading, showForm, activeTab]);
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 relative">

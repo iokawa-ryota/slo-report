@@ -116,6 +116,7 @@ describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.localStorage.clear();
+    window.sessionStorage.clear();
     vi.spyOn(window, 'confirm').mockReturnValue(true);
   });
 
