@@ -8,13 +8,15 @@ import {
   X,
   Layers,
   LogOut,
-  Loader
+  Loader,
+  Cpu
 } from 'lucide-react';
 import { MACHINE_OPTIONS, getMachineConfig } from './config/machineConfig';
 import { calculateInputStats, calculateLoss } from './utils/recordCalculations';
 import { subscribeToRecords, createRecord, updateRecord, deleteRecord as deleteRecordFromDb, migrateFromLocalStorage } from './firebase/db';
 import { loginAnonymously, subscribeToAuthState, logout, signInWithGoogle } from './firebase/auth';
 import { isFirebaseConfigured } from './firebase/config';
+import { SettingInferenceScreen } from './features/settingInference/components/SettingInferenceScreen';
 import {
   ChartSection,
   NavItem,
@@ -66,12 +68,14 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [records, setRecords] = useState([]);
   const [hasMigratedData, setHasMigratedData] = useState(false);
+  const [allowGuestInference, setAllowGuestInference] = useState(false);
 
   // Firebase 認証の初期化
   useEffect(() => {
     const unsubscribe = subscribeToAuthState(async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
+        setAllowGuestInference(false);
         // ローカルストレージからのデータ移行をチェック
         const localData = localStorage.getItem('pachislo-records-v8');
         if (localData && !hasMigratedData && isFirebaseConfigured) {
@@ -342,6 +346,7 @@ const App = () => {
     other: TechDetailSectionOther
   };
   const DetailSectionComponent = detailSectionComponents[currentConfig.detailVariant] || TechDetailSectionOther;
+  const shouldShowLoginOverlay = !isLoading && !user && isFirebaseConfigured && !(allowGuestInference && activeTab === 'setting-inference');
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 relative">
@@ -356,7 +361,7 @@ const App = () => {
         </div>
       )}
 
-      {!isLoading && !user && isFirebaseConfigured && (
+      {shouldShowLoginOverlay && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center">
           <div className="bg-white rounded-2xl p-8 shadow-xl text-center max-w-sm">
             <div className="mb-6">
@@ -381,6 +386,16 @@ const App = () => {
                 className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold transition-colors text-sm"
               >
                 匿名で続行（同期なし）
+              </button>
+
+              <button
+                onClick={() => {
+                  setAllowGuestInference(true);
+                  setActiveTab('setting-inference');
+                }}
+                className="w-full px-4 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg font-semibold transition-colors text-sm"
+              >
+                設定推測のみ使う（ローカル）
               </button>
             </div>
             
@@ -428,6 +443,7 @@ const App = () => {
               />
             ))}
             <div className="pt-4 pb-2 text-[10px] font-black text-slate-500 uppercase tracking-widest px-3">その他</div>
+            <NavItem icon={<Cpu size={18}/>} label="設定推測" active={activeTab === 'setting-inference'} onClick={() => {setActiveTab('setting-inference'); setIsSidebarOpen(false);}} />
             <NavItem icon={<History size={18}/>} label="全履歴一覧" active={activeTab === 'history'} onClick={() => {setActiveTab('history'); setIsSidebarOpen(false);}} />
           </nav>
 
@@ -457,6 +473,7 @@ const App = () => {
             <div className="font-black text-slate-800 text-sm flex items-center gap-2">
               {activeTab === 'dashboard' && '総合ダッシュボード'}
               {activeTab === 'machine-stats' && `機種統計: ${selectedMachineTab}`}
+              {activeTab === 'setting-inference' && '設定推測'}
               {activeTab === 'history' && '全履歴'}
             </div>
           </div>
@@ -543,6 +560,10 @@ const App = () => {
                 return <RecordItem key={r.id} record={r} onDelete={deleteRecord} onEdit={loadRecordForEdit} />;
               })}
             </div>
+          )}
+
+          {activeTab === 'setting-inference' && (
+            <SettingInferenceScreen />
           )}
         </div>
 

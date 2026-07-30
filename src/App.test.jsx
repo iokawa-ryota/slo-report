@@ -84,6 +84,7 @@ vi.mock('./firebase/auth', () => ({
     callback({ uid: 'local-user', email: null, isAnonymous: true });
     return () => {};
   },
+  getCurrentUser: () => ({ uid: 'local-user', email: null, isAnonymous: true }),
   logout: vi.fn(),
   signInWithGoogle: vi.fn()
 }));
@@ -191,6 +192,23 @@ describe('App', () => {
     expect(document.querySelector('#final-games-section')).toHaveClass('grid-cols-1', 'sm:grid-cols-3');
     expect(document.querySelector('#small-role-loss-section')).toHaveClass('grid-cols-1', 'sm:grid-cols-3');
     expect(document.querySelector('#recent-history-section .group > div')).toHaveClass('flex-col', 'sm:flex-row');
+  });
+
+  it('allows local setting inference usage without login', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: '設定推測' })[0]);
+
+    expect(await screen.findByText('うみねこのなく頃に2')).toBeInTheDocument();
+    expect(screen.getByText('ローカル利用中')).toBeInTheDocument();
+
+    const totalGamesInput = screen.getByRole('textbox', { name: '総ゲーム数' });
+    await user.type(totalGamesInput, '2000');
+    await user.type(screen.getByRole('textbox', { name: 'BIG回数' }), '6');
+
+    expect(screen.getByText('使用項目')).toBeInTheDocument();
+    expect(screen.getByText('除外項目')).toBeInTheDocument();
   });
 
 });

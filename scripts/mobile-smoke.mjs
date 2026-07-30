@@ -1,7 +1,6 @@
-import { chromium, devices } from 'playwright';
+import { chromium } from 'playwright';
 
 const baseUrl = process.env.TARGET_URL || 'http://127.0.0.1:4173';
-const iPhone = devices['iPhone 12'];
 
 async function expectVisible(locator, message) {
   if (!(await locator.isVisible())) {
@@ -39,7 +38,9 @@ async function addRecord(page, record) {
 async function run() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({
-    ...iPhone,
+    viewport: { width: 320, height: 740 },
+    isMobile: true,
+    hasTouch: true,
     locale: 'ja-JP',
     timezoneId: 'Asia/Tokyo'
   });
@@ -74,17 +75,14 @@ async function run() {
       memo: 'test-machine-mobile'
     });
 
-    const recentHistory = page.locator('#recent-history-section');
-    await expectVisible(recentHistory, '直近履歴セクションが表示されていません');
-
-    const historyText = await recentHistory.innerText();
-    if (!historyText.includes('2026-03-10 - テスト')) {
-      throw new Error('保存後の履歴にテスト機種の最新レコードが反映されていません');
-    }
+    await menuButton.click();
+    await page.getByRole('button', { name: '全履歴一覧' }).click();
+    await expectVisible(page.getByRole('heading', { name: '全履歴' }), '全履歴画面へ遷移できませんでした');
+    await expectVisible(page.getByText('2026-03-10'), '保存後の履歴に最新レコードが表示されていません');
 
     await page.locator('input[type="date"]').nth(0).fill('2026-03-05');
     await page.waitForTimeout(300);
-    await page.getByLabel('直近履歴を編集: 2026-03-10 テスト').first().click();
+    await page.getByLabel('履歴を編集: 2026-03-10 テスト').first().click();
     await expectVisible(page.getByRole('heading', { name: '実践記録を編集' }), '編集モーダルが開きませんでした');
     await expectNoHorizontalOverflow(page, 'form', '編集フォームのモバイル表示で横スクロールが発生しています');
 
@@ -93,6 +91,7 @@ async function run() {
     if (editMachine !== 'テスト' || editMemo !== 'test-machine-mobile') {
       throw new Error(`フィルター後の編集対象が不正です: machine=${editMachine}, memo=${editMemo}`);
     }
+    await page.getByRole('button', { name: 'フォームを閉じる' }).click();
 
     const storedRecords = await page.evaluate(() => JSON.parse(localStorage.getItem('pachislo-records-v9') || '[]'));
     const savedTestRecord = storedRecords.find((record) => record.machineName === 'テスト' && record.memo === 'test-machine-mobile');
@@ -100,13 +99,44 @@ async function run() {
       throw new Error('localStorage にテスト機種の保存データが見つかりませんでした');
     }
 
+    await menuButton.click();
+    await page.getByRole('button', { name: '設定推測' }).click();
+    await expectVisible(page.getByText('うみねこのなく頃に2'), '設定推測画面へ遷移できませんでした');
+    await expectNoHorizontalOverflow(page, 'body', '設定推測画面の320px表示で横スクロールが発生しています');
+
+    await page.getByRole('textbox', { name: '総ゲーム数' }).fill('3200');
+    await page.getByRole('textbox', { name: 'BIG回数' }).fill('10');
+    await page.getByRole('textbox', { name: 'REG回数' }).fill('11');
+    await page.getByRole('textbox', { name: 'ARTゲーム数' }).fill('600');
+    await page.getByRole('textbox', { name: 'ART中共通ベル回数' }).fill('28');
+    await page.getByRole('textbox', { name: 'ART中ハズレ回数' }).fill('10');
+
+    const inferenceDraft = await page.evaluate(() => JSON.parse(localStorage.getItem('setting-inference-draft-v1:umineko2') || '{}'));
+    if (inferenceDraft.input?.totalGames !== '3200' || inferenceDraft.input?.artGames !== '600') {
+      throw new Error('設定推測ドラフトがlocalStorageへ保存されていません');
+    }
+
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(1000);
+    await page.locator('header button').first().click();
+    await page.getByRole('button', { name: '設定推測' }).click();
+
+    const restoredTotalGames = await page.getByRole('textbox', { name: '総ゲーム数' }).inputValue();
+    const restoredArtGames = await page.getByRole('textbox', { name: 'ARTゲーム数' }).inputValue();
+    if (restoredTotalGames !== '3200' || restoredArtGames !== '600') {
+      throw new Error(`設定推測ドラフトが復元されていません: total=${restoredTotalGames}, art=${restoredArtGames}`);
+    }
+
+    await expectVisible(page.getByText('最有力設定'), '設定推測結果が表示されていません');
+
     console.log(JSON.stringify({
       ok: true,
       baseUrl,
-      device: 'iPhone 12',
+      device: '320px mobile',
       savedRecords: storedRecords.length,
       latestRecord: storedRecords[0]?.memo || null,
-      savedMachineName: savedTestRecord.machineName
+      savedMachineName: savedTestRecord.machineName,
+      restoredInferenceDraft: restoredTotalGames
     }, null, 2));
   } finally {
     await browser.close();
