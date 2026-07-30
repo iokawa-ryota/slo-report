@@ -9,7 +9,11 @@ import {
   Trash2
 } from 'lucide-react';
 import { useUmineko2Draft } from '../hooks/useUmineko2Draft.js';
-import { canSyncSettingInference, saveSettingInferenceSession } from '../storage/firestoreStorage.js';
+import {
+  canSyncSettingInference,
+  getSettingInferenceSaveErrorMessage,
+  saveSettingInferenceSession
+} from '../storage/firestoreStorage.js';
 import { InferenceResultCard } from './InferenceResultCard.jsx';
 import { StepperField } from './StepperField.jsx';
 import {
@@ -127,7 +131,7 @@ export const SettingInferenceScreen = () => {
       setSessionId(nextSessionId);
       setSaveMessage('Firestoreへ保存しました');
     } catch (error) {
-      setSaveError(error.message || '保存に失敗しました');
+      setSaveError(getSettingInferenceSaveErrorMessage(error));
     } finally {
       setIsSaving(false);
     }
@@ -480,6 +484,11 @@ export const SettingInferenceScreen = () => {
         )}
         {saveMessage && <p className="mt-3 text-sm font-bold text-emerald-600">{saveMessage}</p>}
         {saveError && <p className="mt-3 text-sm font-bold text-rose-600">{saveError}</p>}
+        {saveError.includes('settingInferences') && (
+          <p className="mt-2 text-xs font-semibold text-slate-500">
+            反映先: `users/{'{'}userIdentifier{'}'}/settingInferences/{'{'}sessionId{'}'}`。GitHub Pages の再デプロイでは直らないため、Firestore ルールの公開が必要です。
+          </p>
+        )}
 
         <div className="mt-4">
           <InferenceResultCard inference={inference} />

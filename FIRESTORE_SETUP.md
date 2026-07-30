@@ -18,6 +18,12 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.token.email != null && 
         request.auth.token.email.split('@')[0] == userIdentifier;
     }
+
+    // 設定推測セッション: 自分の推測データのみ読み書き可能
+    match /users/{userIdentifier}/settingInferences/{sessionId} {
+      allow read, write: if request.auth != null && request.auth.token.email != null &&
+        request.auth.token.email.split('@')[0] == userIdentifier;
+    }
     
     // その他のドキュメントはデフォルトで拒否
     match /{document=**} {
@@ -71,8 +77,9 @@ GitHub Actionsで自動デプロイが開始されます。
 ## トラブルシューティング
 
 ### エラー: `Missing or insufficient permissions`
-- セキュリティルールが正しく設定されているか確認
-- ログインしているユーザーのUIDとパスの `{userId}` が一致しているか確認
+- セキュリティルールが `records` だけでなく `settingInferences` も許可しているか確認
+- ログインしている Google アカウントのメールローカルパートとパスの `{userIdentifier}` が一致しているか確認
+- ルールを更新したあとに Firebase コンソールで「公開」まで実行したか確認
 
 ### エラー: `The query requires an index`
 - インデックスが作成されるまで数分かかる場合があります

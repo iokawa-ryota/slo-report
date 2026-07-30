@@ -51,3 +51,11 @@ export const saveSettingInferenceSession = async ({ sessionId, input, result }) 
 
   return targetId;
 };
+
+export const getSettingInferenceSaveErrorMessage = (error) => {
+  if (error?.code === 'permission-denied') {
+    return 'Firestoreルールに settingInferences の保存権限がありません。Firebase コンソールでルール更新後に再度保存してください。';
+  }
+
+  return error?.message || '保存に失敗しました';
+};
