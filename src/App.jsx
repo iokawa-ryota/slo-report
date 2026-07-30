@@ -522,16 +522,18 @@ const App = () => {
         />
 
         <div className="pt-20 p-6 md:p-8 max-w-6xl mx-auto w-full">
-          <DateFilterPanel
-            startDate={dateRangeStart}
-            endDate={dateRangeEnd}
-            onStartDateChange={setDateRangeStart}
-            onEndDateChange={setDateRangeEnd}
-            onReset={() => {
-              setDateRangeStart('');
-              setDateRangeEnd('');
-            }}
-          />
+          {activeTab !== 'setting-inference' && (
+            <DateFilterPanel
+              startDate={dateRangeStart}
+              endDate={dateRangeEnd}
+              onStartDateChange={setDateRangeStart}
+              onEndDateChange={setDateRangeEnd}
+              onReset={() => {
+                setDateRangeStart('');
+                setDateRangeEnd('');
+              }}
+            />
+          )}
 
           {activeTab === 'dashboard' && (
             <>
