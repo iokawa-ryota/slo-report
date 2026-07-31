@@ -183,6 +183,12 @@ export const SettingInferenceScreen = () => {
 
   const syncEnabled = canSyncSettingInference();
   const supportedMetricLabels = useMemo(() => getSupportedLabels(inference.usedMetrics), [inference.usedMetrics]);
+  const derivedArtGames = useMemo(() => {
+    const level1 = Number(input.artLevel1Count || 0);
+    const level2 = Number(input.artLevel2Count || 0);
+    const level3 = Number(input.artLevel3Count || 0);
+    return (level1 * 30) + (level2 * 50) + (level3 * 90);
+  }, [input.artLevel1Count, input.artLevel2Count, input.artLevel3Count]);
 
   const handleSave = async () => {
     setSaveMessage('');
@@ -278,6 +284,7 @@ export const SettingInferenceScreen = () => {
               onClear={requestClearField}
               steps={[-10, -1, 1, 10]}
               compact
+              showAdjust={false}
             />
             <StepperField
               label="BIG回数"
@@ -288,6 +295,7 @@ export const SettingInferenceScreen = () => {
               onClear={requestClearField}
               steps={[-1, 1]}
               compact
+              showAdjust={false}
             />
             <StepperField
               label="REG回数"
@@ -298,6 +306,7 @@ export const SettingInferenceScreen = () => {
               onClear={requestClearField}
               steps={[-1, 1]}
               compact
+              showAdjust={false}
             />
           </div>
 
@@ -313,6 +322,7 @@ export const SettingInferenceScreen = () => {
                   onClear={requestClearField}
                   steps={[-1, 1]}
                   compact
+                  showAdjust={false}
                 />
                 <StepperField
                   label="BIGビタ成功"
@@ -323,6 +333,7 @@ export const SettingInferenceScreen = () => {
                   onClear={requestClearField}
                   steps={[-1, 1]}
                   compact
+                  showAdjust={false}
                 />
                 <StepperField
                   label="REGゲーム数"
@@ -333,6 +344,7 @@ export const SettingInferenceScreen = () => {
                   onClear={requestClearField}
                   steps={[-1, 1]}
                   compact
+                  showAdjust={false}
                 />
                 <StepperField
                   label="REG斜め青7"
@@ -343,6 +355,7 @@ export const SettingInferenceScreen = () => {
                   onClear={requestClearField}
                   steps={[-1, 1]}
                   compact
+                  showAdjust={false}
                 />
               </div>
 
@@ -354,6 +367,7 @@ export const SettingInferenceScreen = () => {
                 onAdjust={adjustField}
                 onClear={requestClearField}
                 steps={[-1, 1]}
+                showAdjust={false}
               />
 
               <SummaryActionCard
@@ -374,18 +388,53 @@ export const SettingInferenceScreen = () => {
         testId="art-accordion"
       >
         <div className="space-y-4">
-          <div className={compactGridClass}>
-            <StepperField
-              label="ARTゲーム数"
-              name="artGames"
-              value={input.artGames}
-              onChange={handleFieldChange}
-              onAdjust={adjustField}
-              onClear={requestClearField}
-              steps={[-10, -1, 1, 10]}
-              hint="ART分母"
-              compact
-            />
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-black text-slate-800">ARTレベル回数</div>
+                <p className="mt-1 text-xs text-slate-500">Lv1=30G / Lv2=50G / Lv3=90G を自動合算します。</p>
+              </div>
+              <div className="rounded-2xl bg-white px-3 py-2 text-right">
+                <div className="text-[11px] font-black uppercase text-slate-400">ART合計</div>
+                <div className="text-lg font-black text-slate-800">{derivedArtGames.toLocaleString()}G</div>
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <StepperField
+                label="Lv1"
+                name="artLevel1Count"
+                value={input.artLevel1Count}
+                onChange={handleFieldChange}
+                onAdjust={adjustField}
+                onClear={requestClearField}
+                steps={[-1, 1]}
+                compact
+              />
+              <StepperField
+                label="Lv2"
+                name="artLevel2Count"
+                value={input.artLevel2Count}
+                onChange={handleFieldChange}
+                onAdjust={adjustField}
+                onClear={requestClearField}
+                steps={[-1, 1]}
+                compact
+              />
+              <StepperField
+                label="Lv3"
+                name="artLevel3Count"
+                value={input.artLevel3Count}
+                onChange={handleFieldChange}
+                onAdjust={adjustField}
+                onClear={requestClearField}
+                steps={[-1, 1]}
+                compact
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
             <StepperField
               label="ART中共通ベル回数"
               name="artCommonBellCount"

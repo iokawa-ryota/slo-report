@@ -21,6 +21,18 @@ export const UMINEKO2_PHASE1_FIELDS = {
     key: 'artGames',
     label: 'ARTゲーム数'
   },
+  artLevel1Count: {
+    key: 'artLevel1Count',
+    label: 'ARTレベル1回数'
+  },
+  artLevel2Count: {
+    key: 'artLevel2Count',
+    label: 'ARTレベル2回数'
+  },
+  artLevel3Count: {
+    key: 'artLevel3Count',
+    label: 'ARTレベル3回数'
+  },
   artCommonBellCount: {
     key: 'artCommonBellCount',
     label: 'ART中共通ベル回数'
@@ -40,7 +52,9 @@ export const UMINEKO2_PHASE1_DEFAULT_INPUT = {
   regGameCount: '',
   regDiagonalBlue7Count: '',
   regParallelBlue7Count: '',
-  artGames: '',
+  artLevel1Count: '',
+  artLevel2Count: '',
+  artLevel3Count: '',
   artCommonBellCount: '',
   artMissCount: '',
   logoFlashSmallCount: '',

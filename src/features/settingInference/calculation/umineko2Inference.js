@@ -28,6 +28,11 @@ const METRIC_KEYS = {
 const SAMPLE_WARNING_GAMES = 1500;
 const SAMPLE_WARNING_ART_GAMES = 300;
 const LOG_FLOOR = 1e-12;
+const ART_LEVEL_GAME_COUNTS = {
+  artLevel1Count: 30,
+  artLevel2Count: 50,
+  artLevel3Count: 90
+};
 
 const safeLog = (value) => Math.log(Math.max(value, LOG_FLOOR));
 
@@ -132,7 +137,9 @@ export const validateUmineko2Input = (rawInput) => {
     regGameCount: parseOptionalCount(rawInput.regGameCount, 'REGゲーム数', errors),
     regDiagonalBlue7Count: parseOptionalCount(rawInput.regDiagonalBlue7Count, 'REG斜め青7', errors),
     regParallelBlue7Count: parseOptionalCount(rawInput.regParallelBlue7Count, 'REG平行青7', errors),
-    artGames: parseOptionalCount(rawInput.artGames, UMINEKO2_PHASE1_FIELDS.artGames.label, errors),
+    artLevel1Count: parseOptionalCount(rawInput.artLevel1Count, UMINEKO2_PHASE1_FIELDS.artLevel1Count.label, errors),
+    artLevel2Count: parseOptionalCount(rawInput.artLevel2Count, UMINEKO2_PHASE1_FIELDS.artLevel2Count.label, errors),
+    artLevel3Count: parseOptionalCount(rawInput.artLevel3Count, UMINEKO2_PHASE1_FIELDS.artLevel3Count.label, errors),
     artCommonBellCount: parseOptionalCount(rawInput.artCommonBellCount, UMINEKO2_PHASE1_FIELDS.artCommonBellCount.label, errors),
     artMissCount: parseOptionalCount(rawInput.artMissCount, UMINEKO2_PHASE1_FIELDS.artMissCount.label, errors),
     logoFlashSmallCount: parseOptionalCount(rawInput.logoFlashSmallCount, 'ロゴ発光（小）', errors),
@@ -151,6 +158,17 @@ export const validateUmineko2Input = (rawInput) => {
     truthPointEvents: Array.isArray(rawInput.truthPointEvents) ? rawInput.truthPointEvents : [],
     level2NaviEvents: Array.isArray(rawInput.level2NaviEvents) ? rawInput.level2NaviEvents : []
   };
+
+  const hasAnyArtLevelInput = ['artLevel1Count', 'artLevel2Count', 'artLevel3Count']
+    .some((key) => normalizedInput[key] !== null);
+  const derivedArtGames = hasAnyArtLevelInput
+    ? (
+      (normalizedInput.artLevel1Count || 0) * ART_LEVEL_GAME_COUNTS.artLevel1Count +
+      (normalizedInput.artLevel2Count || 0) * ART_LEVEL_GAME_COUNTS.artLevel2Count +
+      (normalizedInput.artLevel3Count || 0) * ART_LEVEL_GAME_COUNTS.artLevel3Count
+    )
+    : null;
+  normalizedInput.artGames = derivedArtGames;
 
   const totalGamesDependentCounts = [
     ['BIG回数', normalizedInput.bigCount],
@@ -349,8 +367,8 @@ const buildUsedAndExcludedMetrics = (normalizedInput) => {
   }
 
   if (normalizedInput.artGames === null) {
-    pushExcluded(excludedMetrics, METRIC_KEYS.artCommonBell, 'ARTゲーム数が未入力');
-    pushExcluded(excludedMetrics, METRIC_KEYS.artMiss, 'ARTゲーム数が未入力');
+    pushExcluded(excludedMetrics, METRIC_KEYS.artCommonBell, 'ARTレベル回数が未入力');
+    pushExcluded(excludedMetrics, METRIC_KEYS.artMiss, 'ARTレベル回数が未入力');
   } else if (normalizedInput.artGames === 0) {
     pushExcluded(excludedMetrics, METRIC_KEYS.artCommonBell, 'ARTゲーム数0は未計測扱い');
     pushExcluded(excludedMetrics, METRIC_KEYS.artMiss, 'ARTゲーム数0は未計測扱い');

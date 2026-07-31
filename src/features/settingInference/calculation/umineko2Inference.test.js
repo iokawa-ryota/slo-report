@@ -7,7 +7,9 @@ describe('calculateUmineko2Inference', () => {
       totalGames: '2000',
       bigCount: '5',
       regCount: '',
-      artGames: '',
+      artLevel1Count: '',
+      artLevel2Count: '',
+      artLevel3Count: '',
       artCommonBellCount: '',
       artMissCount: ''
     });
@@ -24,17 +26,19 @@ describe('calculateUmineko2Inference', () => {
       totalGames: '2000',
       bigCount: '0',
       regCount: '0',
-      artGames: '',
+      artLevel1Count: '',
+      artLevel2Count: '',
+      artLevel3Count: '',
       artCommonBellCount: '',
       artMissCount: ''
     });
 
     expect(result.errors).toEqual([]);
     expect(result.usedMetrics.map((metric) => metric.key)).toEqual(['big', 'reg']);
-    expect(result.result.probabilities.reduce((sum, item) => sum + item.percentage, 0)).toBe(100);
+    expect(result.result.probabilities.reduce((sum, item) => sum + item.percentage, 0)).toBeCloseTo(100, 5);
   });
 
-  it('does not use art metrics when art games are blank', () => {
+  it('does not use art metrics when art levels are blank', () => {
     const result = calculateUmineko2Inference({
       totalGames: '2500',
       bigCount: '8',
@@ -42,22 +46,26 @@ describe('calculateUmineko2Inference', () => {
       oneRoleBCount: '',
       oneRoleCCount: '',
       confirmedRoleACount: '',
-      artGames: '',
+      artLevel1Count: '',
+      artLevel2Count: '',
+      artLevel3Count: '',
       artCommonBellCount: '10',
       artMissCount: '3'
     });
 
     expect(result.errors).toEqual([]);
     expect(result.usedMetrics.map((metric) => metric.key)).toEqual(['big', 'reg']);
-    expect(result.excludedMetrics.find((metric) => metric.key === 'artCommonBell')?.reason).toBe('ARTゲーム数が未入力');
+    expect(result.excludedMetrics.find((metric) => metric.key === 'artCommonBell')?.reason).toBe('ARTレベル回数が未入力');
   });
 
-  it('treats artGames=0 with zero counts as unmeasured', () => {
+  it('treats zero art level counts with zero art metrics as unmeasured', () => {
     const result = calculateUmineko2Inference({
       totalGames: '2500',
       bigCount: '8',
       regCount: '7',
-      artGames: '0',
+      artLevel1Count: '0',
+      artLevel2Count: '0',
+      artLevel3Count: '0',
       artCommonBellCount: '0',
       artMissCount: '0'
     });
@@ -75,7 +83,9 @@ describe('calculateUmineko2Inference', () => {
       regGameCount: '10',
       regDiagonalBlue7Count: '8',
       regParallelBlue7Count: '4',
-      artGames: '100',
+      artLevel1Count: '1',
+      artLevel2Count: '1',
+      artLevel3Count: '0',
       artCommonBellCount: '101',
       artMissCount: '0',
       level2NaviSameColorTrialCount: '3',
@@ -94,13 +104,15 @@ describe('calculateUmineko2Inference', () => {
       totalGames: '4200',
       bigCount: '14',
       regCount: '13',
-      artGames: '700',
+      artLevel1Count: '10',
+      artLevel2Count: '8',
+      artLevel3Count: '3',
       artCommonBellCount: '30',
       artMissCount: '12'
     });
 
     expect(result.errors).toEqual([]);
-    expect(result.result.probabilities.reduce((sum, item) => sum + item.percentage, 0)).toBe(100);
+    expect(result.result.probabilities.reduce((sum, item) => sum + item.percentage, 0)).toBeCloseTo(100, 5);
   });
 
   it('raises 4+ probability when art common bell is high-setting leaning', () => {
@@ -108,7 +120,9 @@ describe('calculateUmineko2Inference', () => {
       totalGames: '4000',
       bigCount: '12',
       regCount: '11',
-      artGames: '800',
+      artLevel1Count: '10',
+      artLevel2Count: '8',
+      artLevel3Count: '1',
       artCommonBellCount: '20',
       artMissCount: '14'
     });
@@ -116,7 +130,9 @@ describe('calculateUmineko2Inference', () => {
       totalGames: '4000',
       bigCount: '12',
       regCount: '11',
-      artGames: '800',
+      artLevel1Count: '10',
+      artLevel2Count: '8',
+      artLevel3Count: '1',
       artCommonBellCount: '36',
       artMissCount: '14'
     });

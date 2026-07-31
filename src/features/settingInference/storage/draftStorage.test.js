@@ -19,7 +19,7 @@ describe('draftStorage', () => {
         totalGames: '',
         bigCount: '0',
         regCount: '',
-        artGames: '0',
+        artLevel1Count: '0',
         artCommonBellCount: '',
         artMissCount: '0'
       }
@@ -30,7 +30,7 @@ describe('draftStorage', () => {
     expect(restored.sessionId).toBe('session-1');
     expect(restored.input.totalGames).toBe('');
     expect(restored.input.bigCount).toBe('0');
-    expect(restored.input.artGames).toBe('0');
+    expect(restored.input.artLevel1Count).toBe('0');
     expect(restored.input.artCommonBellCount).toBe('');
     expect(restored.input.artMissCount).toBe('0');
   });
@@ -42,7 +42,7 @@ describe('draftStorage', () => {
         totalGames: '1000',
         bigCount: '',
         regCount: '',
-        artGames: '',
+        artLevel1Count: '',
         artCommonBellCount: '',
         artMissCount: ''
       }

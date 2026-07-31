@@ -11,7 +11,8 @@ export const StepperField = ({
   onClear,
   steps,
   hint,
-  compact = false
+  compact = false,
+  showAdjust = true
 }) => (
   <div className={`min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm ${compact ? 'p-3' : 'p-4'}`}>
     <div className={`gap-3 ${compact ? 'flex flex-col items-start' : 'flex items-start justify-between'}`}>
@@ -41,20 +42,22 @@ export const StepperField = ({
       />
     </div>
 
-    <div className={`mt-3 grid gap-2 ${compact && steps.length > 2 ? 'grid-cols-2 min-[420px]:grid-cols-4' : steps.length <= 2 ? 'grid-cols-2' : 'grid-cols-4'}`}>
-      {steps.map((step) => {
-        const prefix = step > 0 ? '+' : '';
-        return (
-          <button
-            key={step}
-            type="button"
-            onClick={() => onAdjust(name, step)}
-            className={`${baseButtonClass} ${compact ? 'min-h-9 min-w-0 px-0 text-[11px]' : ''}`}
-          >
-            {`${prefix}${step}`}
-          </button>
-        );
-      })}
-    </div>
+    {showAdjust && (
+      <div className={`mt-3 grid gap-2 ${compact && steps.length > 2 ? 'grid-cols-2 min-[420px]:grid-cols-4' : steps.length <= 2 ? 'grid-cols-2' : 'grid-cols-4'}`}>
+        {steps.map((step) => {
+          const prefix = step > 0 ? '+' : '';
+          return (
+            <button
+              key={step}
+              type="button"
+              onClick={() => onAdjust(name, step)}
+              className={`${baseButtonClass} ${compact ? 'min-h-9 min-w-0 px-0 text-[11px]' : ''}`}
+            >
+              {`${prefix}${step}`}
+            </button>
+          );
+        })}
+      </div>
+    )}
   </div>
 );
