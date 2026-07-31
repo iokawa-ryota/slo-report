@@ -10,7 +10,19 @@ const METRIC_KEYS = {
   big: 'big',
   reg: 'reg',
   artCommonBell: 'artCommonBell',
-  artMiss: 'artMiss'
+  artMiss: 'artMiss',
+  oneRoleB: 'oneRoleB',
+  oneRoleC: 'oneRoleC',
+  confirmedRoleA: 'confirmedRoleA',
+  replayReg: 'replayReg',
+  oneRoleCRedBig: 'oneRoleCRedBig',
+  confirmedRoleARedBig: 'confirmedRoleARedBig',
+  regBlue7Pattern: 'regBlue7Pattern',
+  logoFlashPattern: 'logoFlashPattern',
+  truthPointPattern: 'truthPointPattern',
+  level2NaviSameColor: 'level2NaviSameColor',
+  level2NaviDifferentColor: 'level2NaviDifferentColor',
+  level2NaviOther: 'level2NaviOther'
 };
 
 const SAMPLE_WARNING_GAMES = 1500;
@@ -60,18 +72,54 @@ const softmaxFromLogLikelihoods = (logLikelihoods) => {
   return exps.map((value) => value / total);
 };
 
-const binomialLogLikelihood = (trials, successes, denominator) => {
-  const p = Math.min(Math.max(1 / denominator, LOG_FLOOR), 1 - LOG_FLOOR);
+const binomialLogLikelihood = (trials, successes, probability) => {
+  const p = Math.min(Math.max(probability, LOG_FLOOR), 1 - LOG_FLOOR);
   return (successes * safeLog(p)) + ((trials - successes) * safeLog(1 - p));
 };
+
+const categoricalLogLikelihood = (counts, probabilities) => (
+  counts.reduce((sum, count, index) => (
+    sum + (count * safeLog(probabilities[index]))
+  ), 0)
+);
 
 const pushExcluded = (excludedMetrics, key, reason) => {
   excludedMetrics.push({
     key,
-    label: UMINEKO2_PROBABILITIES[key].label,
+    label: UMINEKO2_PROBABILITIES[key]?.label || key,
     reason
   });
 };
+
+const countSpecialBonuses = (specialBonuses = []) => specialBonuses.reduce((accumulator, entry) => {
+  const next = { ...accumulator };
+
+  if (entry.trigger === 'リプレイ' && entry.bonusType === 'REG') {
+    next.replayReg += 1;
+  }
+  if (entry.trigger === '1枚役C' && entry.bonusType === 'BIG' && entry.bonusColor === '赤同色') {
+    next.oneRoleCRedBig += 1;
+  }
+  if (entry.trigger === '確定役' && entry.bonusType === 'BIG' && entry.bonusColor === '赤異色') {
+    next.confirmedRoleARedBig += 1;
+  }
+
+  return next;
+}, {
+  replayReg: 0,
+  oneRoleCRedBig: 0,
+  confirmedRoleARedBig: 0
+});
+
+const countTruthPointEvents = (truthPointEvents = []) => truthPointEvents.reduce((counts, entry) => ({
+  ...counts,
+  [entry.point]: (counts[entry.point] || 0) + 1
+}), {
+  '30pt': 0,
+  '50pt': 0,
+  '70pt': 0,
+  '200pt': 0
+});
 
 export const validateUmineko2Input = (rawInput) => {
   const errors = [];
@@ -79,43 +127,124 @@ export const validateUmineko2Input = (rawInput) => {
     totalGames: parseOptionalCount(rawInput.totalGames, UMINEKO2_PHASE1_FIELDS.totalGames.label, errors),
     bigCount: parseOptionalCount(rawInput.bigCount, UMINEKO2_PHASE1_FIELDS.bigCount.label, errors),
     regCount: parseOptionalCount(rawInput.regCount, UMINEKO2_PHASE1_FIELDS.regCount.label, errors),
+    bigBitaTrialCount: parseOptionalCount(rawInput.bigBitaTrialCount, 'BIGビタ分母', errors),
+    bigBitaSuccessCount: parseOptionalCount(rawInput.bigBitaSuccessCount, 'BIGビタ成功', errors),
+    regGameCount: parseOptionalCount(rawInput.regGameCount, 'REGゲーム数', errors),
+    regDiagonalBlue7Count: parseOptionalCount(rawInput.regDiagonalBlue7Count, 'REG斜め青7', errors),
+    regParallelBlue7Count: parseOptionalCount(rawInput.regParallelBlue7Count, 'REG平行青7', errors),
     artGames: parseOptionalCount(rawInput.artGames, UMINEKO2_PHASE1_FIELDS.artGames.label, errors),
     artCommonBellCount: parseOptionalCount(rawInput.artCommonBellCount, UMINEKO2_PHASE1_FIELDS.artCommonBellCount.label, errors),
-    artMissCount: parseOptionalCount(rawInput.artMissCount, UMINEKO2_PHASE1_FIELDS.artMissCount.label, errors)
+    artMissCount: parseOptionalCount(rawInput.artMissCount, UMINEKO2_PHASE1_FIELDS.artMissCount.label, errors),
+    logoFlashSmallCount: parseOptionalCount(rawInput.logoFlashSmallCount, 'ロゴ発光（小）', errors),
+    logoFlashLargeCount: parseOptionalCount(rawInput.logoFlashLargeCount, 'ロゴ発光（大）', errors),
+    oneRoleACount: parseOptionalCount(rawInput.oneRoleACount, '1枚役A', errors),
+    oneRoleBCount: parseOptionalCount(rawInput.oneRoleBCount, '1枚役B', errors),
+    oneRoleCCount: parseOptionalCount(rawInput.oneRoleCCount, '1枚役C', errors),
+    confirmedRoleACount: parseOptionalCount(rawInput.confirmedRoleACount, '確定役A', errors),
+    level2NaviSameColorTrialCount: parseOptionalCount(rawInput.level2NaviSameColorTrialCount, '同色BB後のART突入リプレイ回数', errors),
+    level2NaviSameColorSuccessCount: parseOptionalCount(rawInput.level2NaviSameColorSuccessCount, '同色BB後のLv2ナビ発生回数', errors),
+    level2NaviDifferentColorTrialCount: parseOptionalCount(rawInput.level2NaviDifferentColorTrialCount, '異色BB後のART突入リプレイ回数', errors),
+    level2NaviDifferentColorSuccessCount: parseOptionalCount(rawInput.level2NaviDifferentColorSuccessCount, '異色BB後のLv2ナビ発生回数', errors),
+    level2NaviOtherTrialCount: parseOptionalCount(rawInput.level2NaviOtherTrialCount, 'RB後・その他のART突入リプレイ回数', errors),
+    level2NaviOtherSuccessCount: parseOptionalCount(rawInput.level2NaviOtherSuccessCount, 'RB後・その他のLv2ナビ発生回数', errors),
+    specialBonuses: Array.isArray(rawInput.specialBonuses) ? rawInput.specialBonuses : [],
+    truthPointEvents: Array.isArray(rawInput.truthPointEvents) ? rawInput.truthPointEvents : [],
+    level2NaviEvents: Array.isArray(rawInput.level2NaviEvents) ? rawInput.level2NaviEvents : []
   };
+
+  const totalGamesDependentCounts = [
+    ['BIG回数', normalizedInput.bigCount],
+    ['REG回数', normalizedInput.regCount],
+    ['1枚役B', normalizedInput.oneRoleBCount],
+    ['1枚役C', normalizedInput.oneRoleCCount],
+    ['確定役A', normalizedInput.confirmedRoleACount]
+  ];
 
   if (normalizedInput.totalGames !== null) {
     if (normalizedInput.totalGames === 0) {
-      if ((normalizedInput.bigCount || 0) > 0 || (normalizedInput.regCount || 0) > 0) {
-        errors.push('総ゲーム数が0の場合、BIG回数とREG回数は0を超えられません');
+      totalGamesDependentCounts.forEach(([label, count]) => {
+        if ((count || 0) > 0) {
+          errors.push(`総ゲーム数が0の場合、${label}は0を超えられません`);
+        }
+      });
+    } else {
+      totalGamesDependentCounts.forEach(([label, count]) => {
+        if (count !== null && count > normalizedInput.totalGames) {
+          errors.push(`${label}が総ゲーム数を超えています`);
+        }
+      });
+    }
+  }
+
+  if (normalizedInput.artGames !== null) {
+    if (normalizedInput.artGames === 0) {
+      if ((normalizedInput.artCommonBellCount || 0) > 0 || (normalizedInput.artMissCount || 0) > 0) {
+        errors.push('ARTゲーム数が0の場合、ART中共通ベル回数とART中ハズレ回数は0を超えられません');
       }
     } else {
-      if (normalizedInput.bigCount !== null && normalizedInput.bigCount > normalizedInput.totalGames) {
-        errors.push('BIG回数が総ゲーム数を超えています');
+      if (normalizedInput.artCommonBellCount !== null && normalizedInput.artCommonBellCount > normalizedInput.artGames) {
+        errors.push('ART中共通ベル回数がARTゲーム数を超えています');
       }
-      if (normalizedInput.regCount !== null && normalizedInput.regCount > normalizedInput.totalGames) {
-        errors.push('REG回数が総ゲーム数を超えています');
+      if (normalizedInput.artMissCount !== null && normalizedInput.artMissCount > normalizedInput.artGames) {
+        errors.push('ART中ハズレ回数がARTゲーム数を超えています');
       }
     }
   }
 
-  if (normalizedInput.artGames === null) {
-    return { normalizedInput, errors };
-  }
+  if (normalizedInput.regGameCount !== null) {
+    const diagonal = normalizedInput.regDiagonalBlue7Count || 0;
+    const parallel = normalizedInput.regParallelBlue7Count || 0;
 
-  if (normalizedInput.artGames === 0) {
-    if ((normalizedInput.artCommonBellCount || 0) > 0 || (normalizedInput.artMissCount || 0) > 0) {
-      errors.push('ARTゲーム数が0の場合、ART中共通ベル回数とART中ハズレ回数は0を超えられません');
+    if (normalizedInput.regGameCount === 0) {
+      if (diagonal > 0 || parallel > 0) {
+        errors.push('REGゲーム数が0の場合、青7揃い回数は0を超えられません');
+      }
+    } else if (diagonal + parallel > normalizedInput.regGameCount) {
+      errors.push('REG中の青7揃い回数合計がREGゲーム数を超えています');
     }
-    return { normalizedInput, errors };
+  } else if (normalizedInput.regDiagonalBlue7Count !== null || normalizedInput.regParallelBlue7Count !== null) {
+    errors.push('REG中の青7揃いを使うにはREGゲーム数の入力が必要です');
   }
 
-  if (normalizedInput.artCommonBellCount !== null && normalizedInput.artCommonBellCount > normalizedInput.artGames) {
-    errors.push('ART中共通ベル回数がARTゲーム数を超えています');
-  }
-  if (normalizedInput.artMissCount !== null && normalizedInput.artMissCount > normalizedInput.artGames) {
-    errors.push('ART中ハズレ回数がARTゲーム数を超えています');
-  }
+  [
+    {
+      trialKey: 'level2NaviSameColorTrialCount',
+      successKey: 'level2NaviSameColorSuccessCount',
+      label: '同色BB後のLv2ナビ'
+    },
+    {
+      trialKey: 'level2NaviDifferentColorTrialCount',
+      successKey: 'level2NaviDifferentColorSuccessCount',
+      label: '異色BB後のLv2ナビ'
+    },
+    {
+      trialKey: 'level2NaviOtherTrialCount',
+      successKey: 'level2NaviOtherSuccessCount',
+      label: 'RB後・その他のLv2ナビ'
+    }
+  ].forEach(({ trialKey, successKey, label }) => {
+    const trials = normalizedInput[trialKey];
+    const successes = normalizedInput[successKey];
+
+    if (trials === null && successes === null) {
+      return;
+    }
+    if (trials === null) {
+      errors.push(`${label}を使うには試行回数の入力が必要です`);
+      return;
+    }
+    if (successes === null) {
+      errors.push(`${label}を使うには発生回数の入力が必要です`);
+      return;
+    }
+    if (trials === 0 && successes > 0) {
+      errors.push(`${label}の発生回数が試行回数を超えています`);
+      return;
+    }
+    if (successes > trials) {
+      errors.push(`${label}の発生回数が試行回数を超えています`);
+    }
+  });
 
   return { normalizedInput, errors };
 };
@@ -124,33 +253,98 @@ const buildUsedAndExcludedMetrics = (normalizedInput) => {
   const usedMetrics = [];
   const excludedMetrics = [];
 
+  const pushBinomialMetric = (key, trials, successes) => {
+    usedMetrics.push({
+      key,
+      label: UMINEKO2_PROBABILITIES[key].label,
+      type: 'binomial',
+      trials,
+      successes
+    });
+  };
+
+  const pushCategoricalMetric = (key, counts) => {
+    usedMetrics.push({
+      key,
+      label: UMINEKO2_PROBABILITIES[key].label,
+      type: 'categorical',
+      counts
+    });
+  };
+
+  const specialBonusCounts = countSpecialBonuses(normalizedInput.specialBonuses);
+  const truthPointCounts = countTruthPointEvents(normalizedInput.truthPointEvents);
+  const truthPointTotal = Object.values(truthPointCounts).reduce((sum, value) => sum + value, 0);
+
   if (normalizedInput.totalGames === null) {
-    pushExcluded(excludedMetrics, METRIC_KEYS.big, '総ゲーム数が未入力');
-    pushExcluded(excludedMetrics, METRIC_KEYS.reg, '総ゲーム数が未入力');
+    [
+      METRIC_KEYS.big,
+      METRIC_KEYS.reg,
+      METRIC_KEYS.oneRoleB,
+      METRIC_KEYS.oneRoleC,
+      METRIC_KEYS.confirmedRoleA,
+      METRIC_KEYS.replayReg,
+      METRIC_KEYS.oneRoleCRedBig,
+      METRIC_KEYS.confirmedRoleARedBig
+    ].forEach((key) => pushExcluded(excludedMetrics, key, '総ゲーム数が未入力'));
   } else if (normalizedInput.totalGames === 0) {
-    pushExcluded(excludedMetrics, METRIC_KEYS.big, '総ゲーム数0は未計測扱い');
-    pushExcluded(excludedMetrics, METRIC_KEYS.reg, '総ゲーム数0は未計測扱い');
+    [
+      METRIC_KEYS.big,
+      METRIC_KEYS.reg,
+      METRIC_KEYS.oneRoleB,
+      METRIC_KEYS.oneRoleC,
+      METRIC_KEYS.confirmedRoleA,
+      METRIC_KEYS.replayReg,
+      METRIC_KEYS.oneRoleCRedBig,
+      METRIC_KEYS.confirmedRoleARedBig
+    ].forEach((key) => pushExcluded(excludedMetrics, key, '総ゲーム数0は未計測扱い'));
   } else {
     if (normalizedInput.bigCount === null) {
       pushExcluded(excludedMetrics, METRIC_KEYS.big, 'BIG回数が未入力');
     } else {
-      usedMetrics.push({
-        key: METRIC_KEYS.big,
-        label: UMINEKO2_PROBABILITIES.big.label,
-        trials: normalizedInput.totalGames,
-        successes: normalizedInput.bigCount
-      });
+      pushBinomialMetric(METRIC_KEYS.big, normalizedInput.totalGames, normalizedInput.bigCount);
     }
 
     if (normalizedInput.regCount === null) {
       pushExcluded(excludedMetrics, METRIC_KEYS.reg, 'REG回数が未入力');
     } else {
-      usedMetrics.push({
-        key: METRIC_KEYS.reg,
-        label: UMINEKO2_PROBABILITIES.reg.label,
-        trials: normalizedInput.totalGames,
-        successes: normalizedInput.regCount
-      });
+      pushBinomialMetric(METRIC_KEYS.reg, normalizedInput.totalGames, normalizedInput.regCount);
+    }
+
+    if (normalizedInput.oneRoleBCount === null) {
+      pushExcluded(excludedMetrics, METRIC_KEYS.oneRoleB, '1枚役Bが未入力');
+    } else {
+      pushBinomialMetric(METRIC_KEYS.oneRoleB, normalizedInput.totalGames, normalizedInput.oneRoleBCount);
+    }
+
+    if (normalizedInput.oneRoleCCount === null) {
+      pushExcluded(excludedMetrics, METRIC_KEYS.oneRoleC, '1枚役Cが未入力');
+    } else {
+      pushBinomialMetric(METRIC_KEYS.oneRoleC, normalizedInput.totalGames, normalizedInput.oneRoleCCount);
+    }
+
+    if (normalizedInput.confirmedRoleACount === null) {
+      pushExcluded(excludedMetrics, METRIC_KEYS.confirmedRoleA, '確定役Aが未入力');
+    } else {
+      pushBinomialMetric(METRIC_KEYS.confirmedRoleA, normalizedInput.totalGames, normalizedInput.confirmedRoleACount);
+    }
+
+    if (specialBonusCounts.replayReg > 0) {
+      pushBinomialMetric(METRIC_KEYS.replayReg, normalizedInput.totalGames, specialBonusCounts.replayReg);
+    } else {
+      pushExcluded(excludedMetrics, METRIC_KEYS.replayReg, '該当する特定ボーナス履歴が未入力');
+    }
+
+    if (specialBonusCounts.oneRoleCRedBig > 0) {
+      pushBinomialMetric(METRIC_KEYS.oneRoleCRedBig, normalizedInput.totalGames, specialBonusCounts.oneRoleCRedBig);
+    } else {
+      pushExcluded(excludedMetrics, METRIC_KEYS.oneRoleCRedBig, '該当する特定ボーナス履歴が未入力');
+    }
+
+    if (specialBonusCounts.confirmedRoleARedBig > 0) {
+      pushBinomialMetric(METRIC_KEYS.confirmedRoleARedBig, normalizedInput.totalGames, specialBonusCounts.confirmedRoleARedBig);
+    } else {
+      pushExcluded(excludedMetrics, METRIC_KEYS.confirmedRoleARedBig, '該当する特定ボーナス履歴が未入力');
     }
   }
 
@@ -164,24 +358,105 @@ const buildUsedAndExcludedMetrics = (normalizedInput) => {
     if (normalizedInput.artCommonBellCount === null) {
       pushExcluded(excludedMetrics, METRIC_KEYS.artCommonBell, 'ART中共通ベル回数が未入力');
     } else {
-      usedMetrics.push({
-        key: METRIC_KEYS.artCommonBell,
-        label: UMINEKO2_PROBABILITIES.artCommonBell.label,
-        trials: normalizedInput.artGames,
-        successes: normalizedInput.artCommonBellCount
-      });
+      pushBinomialMetric(METRIC_KEYS.artCommonBell, normalizedInput.artGames, normalizedInput.artCommonBellCount);
     }
 
     if (normalizedInput.artMissCount === null) {
       pushExcluded(excludedMetrics, METRIC_KEYS.artMiss, 'ART中ハズレ回数が未入力');
     } else {
-      usedMetrics.push({
-        key: METRIC_KEYS.artMiss,
-        label: UMINEKO2_PROBABILITIES.artMiss.label,
-        trials: normalizedInput.artGames,
-        successes: normalizedInput.artMissCount
-      });
+      pushBinomialMetric(METRIC_KEYS.artMiss, normalizedInput.artGames, normalizedInput.artMissCount);
     }
+  }
+
+  if (normalizedInput.regGameCount === null) {
+    pushExcluded(excludedMetrics, METRIC_KEYS.regBlue7Pattern, 'REGゲーム数が未入力');
+  } else if (normalizedInput.regGameCount === 0) {
+    pushExcluded(excludedMetrics, METRIC_KEYS.regBlue7Pattern, 'REGゲーム数0は未計測扱い');
+  } else if (normalizedInput.regDiagonalBlue7Count === null || normalizedInput.regParallelBlue7Count === null) {
+    pushExcluded(excludedMetrics, METRIC_KEYS.regBlue7Pattern, 'REG中青7揃い回数が未入力');
+  } else {
+    pushCategoricalMetric(METRIC_KEYS.regBlue7Pattern, [
+      normalizedInput.regDiagonalBlue7Count,
+      normalizedInput.regParallelBlue7Count,
+      normalizedInput.regGameCount - normalizedInput.regDiagonalBlue7Count - normalizedInput.regParallelBlue7Count
+    ]);
+  }
+
+  if (normalizedInput.logoFlashSmallCount === null || normalizedInput.logoFlashLargeCount === null) {
+    pushExcluded(excludedMetrics, METRIC_KEYS.logoFlashPattern, 'ロゴ発光の小と大を両方入力してください');
+  } else {
+    const totalFlashCount = normalizedInput.logoFlashSmallCount + normalizedInput.logoFlashLargeCount;
+    if (totalFlashCount === 0) {
+      pushExcluded(excludedMetrics, METRIC_KEYS.logoFlashPattern, 'ロゴ発光が0回のため未計測扱い');
+    } else {
+      pushCategoricalMetric(METRIC_KEYS.logoFlashPattern, [
+        normalizedInput.logoFlashSmallCount,
+        normalizedInput.logoFlashLargeCount
+      ]);
+    }
+  }
+
+  if (truthPointTotal === 0) {
+    pushExcluded(excludedMetrics, METRIC_KEYS.truthPointPattern, '真実ポイント履歴が未入力');
+  } else {
+    pushCategoricalMetric(METRIC_KEYS.truthPointPattern, [
+      truthPointCounts['30pt'],
+      truthPointCounts['50pt'],
+      truthPointCounts['70pt'],
+      truthPointCounts['200pt']
+    ]);
+  }
+
+  [
+    {
+      key: METRIC_KEYS.level2NaviSameColor,
+      trialKey: 'level2NaviSameColorTrialCount',
+      successKey: 'level2NaviSameColorSuccessCount',
+      missingReason: '同色BB後のLv2ナビ試行/発生回数が未入力'
+    },
+    {
+      key: METRIC_KEYS.level2NaviDifferentColor,
+      trialKey: 'level2NaviDifferentColorTrialCount',
+      successKey: 'level2NaviDifferentColorSuccessCount',
+      missingReason: '異色BB後のLv2ナビ試行/発生回数が未入力'
+    },
+    {
+      key: METRIC_KEYS.level2NaviOther,
+      trialKey: 'level2NaviOtherTrialCount',
+      successKey: 'level2NaviOtherSuccessCount',
+      missingReason: 'RB後・その他のLv2ナビ試行/発生回数が未入力'
+    }
+  ].forEach(({ key, trialKey, successKey, missingReason }) => {
+    const trials = normalizedInput[trialKey];
+    const successes = normalizedInput[successKey];
+
+    if (trials === null && successes === null) {
+      pushExcluded(excludedMetrics, key, missingReason);
+      return;
+    }
+    if (trials === 0 && successes === 0) {
+      pushExcluded(excludedMetrics, key, '試行回数0は未計測扱い');
+      return;
+    }
+    if (trials !== null && successes !== null) {
+      pushBinomialMetric(key, trials, successes);
+    }
+  });
+
+  if (normalizedInput.oneRoleACount !== null) {
+    excludedMetrics.push({
+      key: 'oneRoleA',
+      label: '1枚役A',
+      reason: '1geki掲載の設定差対象外のため推測には未使用'
+    });
+  }
+
+  if (normalizedInput.bigBitaTrialCount !== null || normalizedInput.bigBitaSuccessCount !== null) {
+    excludedMetrics.push({
+      key: 'bigBita',
+      label: 'BIGビタ成功率',
+      reason: '1geki掲載の設定推測項目ではないため未使用'
+    });
   }
 
   return { usedMetrics, excludedMetrics };
@@ -206,6 +481,22 @@ const buildWarnings = (normalizedInput, usedMetrics) => {
   return warnings;
 };
 
+const getMetricLogLikelihood = (metric, settingIndex) => {
+  const config = UMINEKO2_PROBABILITIES[metric.key];
+
+  if (config.type === 'binomial') {
+    return binomialLogLikelihood(metric.trials, metric.successes, 1 / config.denominators[settingIndex]);
+  }
+  if (config.type === 'binomialProbability') {
+    return binomialLogLikelihood(metric.trials, metric.successes, config.probabilities[settingIndex]);
+  }
+  if (config.type === 'categorical') {
+    return categoricalLogLikelihood(metric.counts, config.probabilitiesBySetting[settingIndex]);
+  }
+
+  return 0;
+};
+
 export const calculateUmineko2Inference = (rawInput) => {
   const { normalizedInput, errors } = validateUmineko2Input(rawInput);
   const { usedMetrics, excludedMetrics } = buildUsedAndExcludedMetrics(normalizedInput);
@@ -224,14 +515,8 @@ export const calculateUmineko2Inference = (rawInput) => {
   }
 
   const warnings = buildWarnings(normalizedInput, usedMetrics);
-  const logLikelihoods = UMINEKO2_SETTING_LABELS.map((settingLabel, settingIndex) => (
-    usedMetrics.reduce((sum, metric) => (
-      sum + binomialLogLikelihood(
-        metric.trials,
-        metric.successes,
-        UMINEKO2_PROBABILITIES[metric.key].denominators[settingIndex]
-      )
-    ), 0)
+  const logLikelihoods = UMINEKO2_SETTING_LABELS.map((_, settingIndex) => (
+    usedMetrics.reduce((sum, metric) => sum + getMetricLogLikelihood(metric, settingIndex), 0)
   ));
 
   const exactProbabilities = usedMetrics.length > 0

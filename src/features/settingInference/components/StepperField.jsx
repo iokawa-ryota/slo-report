@@ -13,10 +13,10 @@ export const StepperField = ({
   hint,
   compact = false
 }) => (
-  <div className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${compact ? 'p-3' : 'p-4'}`}>
-    <div className="flex items-start justify-between gap-3">
+  <div className={`min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm ${compact ? 'p-3' : 'p-4'}`}>
+    <div className={`gap-3 ${compact ? 'flex flex-col items-start' : 'flex items-start justify-between'}`}>
       <div>
-        <label htmlFor={name} className={`block font-black text-slate-700 ${compact ? 'text-[11px]' : 'text-xs'}`}>{label}</label>
+        <label htmlFor={name} className={`block font-black text-slate-700 ${compact ? 'text-[11px] leading-tight' : 'text-xs'}`}>{label}</label>
         {hint && <p className="mt-1 text-[11px] text-slate-400">{hint}</p>}
       </div>
       <button
@@ -41,7 +41,7 @@ export const StepperField = ({
       />
     </div>
 
-    <div className={`mt-3 grid gap-2 ${steps.length <= 2 ? 'grid-cols-2' : 'grid-cols-4'}`}>
+    <div className={`mt-3 grid gap-2 ${compact && steps.length > 2 ? 'grid-cols-2 min-[420px]:grid-cols-4' : steps.length <= 2 ? 'grid-cols-2' : 'grid-cols-4'}`}>
       {steps.map((step) => {
         const prefix = step > 0 ? '+' : '';
         return (
@@ -49,7 +49,7 @@ export const StepperField = ({
             key={step}
             type="button"
             onClick={() => onAdjust(name, step)}
-            className={`${baseButtonClass} ${compact ? 'min-h-9 min-w-9 text-xs' : ''}`}
+            className={`${baseButtonClass} ${compact ? 'min-h-9 min-w-0 px-0 text-[11px]' : ''}`}
           >
             {`${prefix}${step}`}
           </button>

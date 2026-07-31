@@ -19,7 +19,6 @@ import {
   UMINEKO2_BIG_COLOR_OPTIONS,
   UMINEKO2_BONUS_TRIGGER_OPTIONS,
   UMINEKO2_BONUS_TYPE_OPTIONS,
-  UMINEKO2_LEVEL2_NAVI_OPTIONS,
   UMINEKO2_REG_COLOR_OPTIONS,
   UMINEKO2_TRUTH_POINT_OPTIONS
 } from '../config/umineko2.js';
@@ -28,8 +27,8 @@ const sectionClass = 'rounded-3xl border border-slate-200 bg-white p-4 shadow-sm
 const inputClass = 'h-12 w-full rounded-xl border border-slate-200 px-4 text-sm font-bold outline-none focus:border-indigo-500';
 const selectClass = `${inputClass} bg-white`;
 const listCardClass = 'rounded-2xl border border-slate-200 bg-slate-50 p-4';
-const compactGridClass = 'grid grid-cols-3 gap-2';
-const twoColumnCompactGridClass = 'grid grid-cols-2 gap-2';
+const compactGridClass = 'grid grid-cols-2 gap-2 min-[420px]:grid-cols-3';
+const twoColumnCompactGridClass = 'grid grid-cols-1 gap-2 min-[360px]:grid-cols-2';
 
 const Accordion = ({ title, subtitle, children, defaultOpen = false, testId }) => (
   <details className="rounded-3xl border border-slate-200 bg-white shadow-sm" open={defaultOpen} data-testid={testId}>
@@ -178,7 +177,6 @@ export const SettingInferenceScreen = () => {
   const [pendingClearField, setPendingClearField] = useState(null);
   const [bonusDraft, setBonusDraft] = useState(createDefaultBonusDraft);
   const [truthPointDraft, setTruthPointDraft] = useState(UMINEKO2_TRUTH_POINT_OPTIONS[0]);
-  const [level2NaviDraft, setLevel2NaviDraft] = useState(UMINEKO2_LEVEL2_NAVI_OPTIONS[0]);
   const [isSpecialBonusModalOpen, setIsSpecialBonusModalOpen] = useState(false);
   const [isTruthPointModalOpen, setIsTruthPointModalOpen] = useState(false);
   const [isLevel2NaviModalOpen, setIsLevel2NaviModalOpen] = useState(false);
@@ -225,10 +223,6 @@ export const SettingInferenceScreen = () => {
     addListEntry('truthPointEvents', { point: truthPointDraft });
   };
 
-  const addLevel2NaviEvent = () => {
-    addListEntry('level2NaviEvents', { pattern: level2NaviDraft });
-  };
-
   const handleResetConfirm = () => {
     resetDraft();
     setShowResetConfirm(false);
@@ -271,7 +265,6 @@ export const SettingInferenceScreen = () => {
       <Accordion
         title="ボナ系"
         subtitle="総ゲーム数とボーナス回数、特定ボーナスを記録します"
-        defaultOpen
         testId="bonus-accordion"
       >
         <div className="space-y-4">
@@ -308,7 +301,7 @@ export const SettingInferenceScreen = () => {
             />
           </div>
 
-          <Accordion title="ボーナス詳細" subtitle="BIGビタとREG中の記録、特定ボーナス履歴をまとめます" defaultOpen testId="bonus-detail-accordion">
+          <Accordion title="ボーナス詳細" subtitle="BIGビタとREG中の記録、特定ボーナス履歴をまとめます" testId="bonus-detail-accordion">
             <div className="space-y-4">
               <div className={twoColumnCompactGridClass}>
                 <StepperField
@@ -378,7 +371,6 @@ export const SettingInferenceScreen = () => {
       <Accordion
         title="ART系"
         subtitle="ART中の設定差要素を記録します"
-        defaultOpen
         testId="art-accordion"
       >
         <div className="space-y-4">
@@ -421,7 +413,6 @@ export const SettingInferenceScreen = () => {
       <Accordion
         title="通常系"
         subtitle="通常時小役と示唆イベントを記録します"
-        defaultOpen
         testId="normal-accordion"
       >
         <div className="space-y-4">
@@ -512,8 +503,8 @@ export const SettingInferenceScreen = () => {
 
             <SummaryActionCard
               title="レベル2ナビ"
-              description="レベル2ナビ発生抽選のパターンを1件ずつ記録します。"
-              countLabel={`${input.level2NaviEvents.length}件記録済み`}
+              description="契機ごとのART突入リプレイ回数とLv2ナビ発生回数を入力します。"
+              countLabel={`${(Number(input.level2NaviSameColorSuccessCount || 0) + Number(input.level2NaviDifferentColorSuccessCount || 0) + Number(input.level2NaviOtherSuccessCount || 0)).toLocaleString()}回発生 / ${(Number(input.level2NaviSameColorTrialCount || 0) + Number(input.level2NaviDifferentColorTrialCount || 0) + Number(input.level2NaviOtherTrialCount || 0)).toLocaleString()}回試行`}
               primaryLabel="追加・確認"
               onOpen={() => setIsLevel2NaviModalOpen(true)}
             />
@@ -697,34 +688,95 @@ export const SettingInferenceScreen = () => {
       {isLevel2NaviModalOpen && (
         <EntryModal
           title="レベル2ナビ"
-          subtitle="レベル2ナビ発生抽選のパターンを1件ずつ記録します。"
-          countLabel={`${input.level2NaviEvents.length}件記録済み`}
+          subtitle="1geki の設定差に合わせて、契機ごとの試行回数とLv2ナビ発生回数を入力します。"
+          countLabel={`${(Number(input.level2NaviSameColorSuccessCount || 0) + Number(input.level2NaviDifferentColorSuccessCount || 0) + Number(input.level2NaviOtherSuccessCount || 0)).toLocaleString()}回発生 / ${(Number(input.level2NaviSameColorTrialCount || 0) + Number(input.level2NaviDifferentColorTrialCount || 0) + Number(input.level2NaviOtherTrialCount || 0)).toLocaleString()}回試行`}
           onClose={() => setIsLevel2NaviModalOpen(false)}
         >
           <div className="space-y-4">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="text-sm font-black text-slate-800">レベル2ナビを追加</div>
-              <div className="mt-3 space-y-3">
-                <LabeledField label="レベル2ナビ" fieldId="level2-navi-modal">
-                  <select value={level2NaviDraft} onChange={(event) => setLevel2NaviDraft(event.target.value)} className={selectClass}>
-                    {UMINEKO2_LEVEL2_NAVI_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </select>
-                </LabeledField>
-                <button type="button" onClick={addLevel2NaviEvent} className="min-h-11 w-full rounded-xl bg-slate-900 px-4 text-sm font-black text-white">
-                  このイベントを1件追加
-                </button>
-              </div>
-            </div>
+              <div className="text-sm font-black text-slate-800">契機別のLv2ナビ入力</div>
+              <p className="mt-1 text-xs text-slate-500">
+                同色BB後、異色BB後、RB後・その他ごとに ART突入リプレイ回数 と Lv2ナビ発生回数 を入力します。
+              </p>
+              <div className="mt-3 space-y-4">
+                <div className="rounded-2xl bg-white p-3">
+                  <div className="mb-2 text-xs font-black text-slate-700">同色BB後</div>
+                  <div className={twoColumnCompactGridClass}>
+                    <StepperField
+                      label="試行回数"
+                      name="level2NaviSameColorTrialCount"
+                      value={input.level2NaviSameColorTrialCount}
+                      onChange={handleFieldChange}
+                      onAdjust={adjustField}
+                      onClear={requestClearField}
+                      steps={[-1, 1]}
+                      compact
+                    />
+                    <StepperField
+                      label="Lv2ナビ発生"
+                      name="level2NaviSameColorSuccessCount"
+                      value={input.level2NaviSameColorSuccessCount}
+                      onChange={handleFieldChange}
+                      onAdjust={adjustField}
+                      onClear={requestClearField}
+                      steps={[-1, 1]}
+                      compact
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-3">
-              {input.level2NaviEvents.length === 0 && <p className="text-sm text-slate-400">まだありません</p>}
-              {input.level2NaviEvents.map((entry) => (
-                <EventCard
-                  key={entry.id}
-                  title={`レベル2ナビ: ${entry.pattern}`}
-                  onDelete={() => removeListEntry('level2NaviEvents', entry.id)}
-                />
-              ))}
+                <div className="rounded-2xl bg-white p-3">
+                  <div className="mb-2 text-xs font-black text-slate-700">異色BB後</div>
+                  <div className={twoColumnCompactGridClass}>
+                    <StepperField
+                      label="試行回数"
+                      name="level2NaviDifferentColorTrialCount"
+                      value={input.level2NaviDifferentColorTrialCount}
+                      onChange={handleFieldChange}
+                      onAdjust={adjustField}
+                      onClear={requestClearField}
+                      steps={[-1, 1]}
+                      compact
+                    />
+                    <StepperField
+                      label="Lv2ナビ発生"
+                      name="level2NaviDifferentColorSuccessCount"
+                      value={input.level2NaviDifferentColorSuccessCount}
+                      onChange={handleFieldChange}
+                      onAdjust={adjustField}
+                      onClear={requestClearField}
+                      steps={[-1, 1]}
+                      compact
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white p-3">
+                  <div className="mb-2 text-xs font-black text-slate-700">RB後・その他</div>
+                  <div className={twoColumnCompactGridClass}>
+                    <StepperField
+                      label="試行回数"
+                      name="level2NaviOtherTrialCount"
+                      value={input.level2NaviOtherTrialCount}
+                      onChange={handleFieldChange}
+                      onAdjust={adjustField}
+                      onClear={requestClearField}
+                      steps={[-1, 1]}
+                      compact
+                    />
+                    <StepperField
+                      label="Lv2ナビ発生"
+                      name="level2NaviOtherSuccessCount"
+                      value={input.level2NaviOtherSuccessCount}
+                      onChange={handleFieldChange}
+                      onAdjust={adjustField}
+                      onClear={requestClearField}
+                      steps={[-1, 1]}
+                      compact
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </EntryModal>

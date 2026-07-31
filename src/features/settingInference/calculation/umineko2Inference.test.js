@@ -39,6 +39,9 @@ describe('calculateUmineko2Inference', () => {
       totalGames: '2500',
       bigCount: '8',
       regCount: '7',
+      oneRoleBCount: '',
+      oneRoleCCount: '',
+      confirmedRoleACount: '',
       artGames: '',
       artCommonBellCount: '10',
       artMissCount: '3'
@@ -69,13 +72,20 @@ describe('calculateUmineko2Inference', () => {
       totalGames: '1000',
       bigCount: '1001',
       regCount: '1',
+      regGameCount: '10',
+      regDiagonalBlue7Count: '8',
+      regParallelBlue7Count: '4',
       artGames: '100',
       artCommonBellCount: '101',
-      artMissCount: '0'
+      artMissCount: '0',
+      level2NaviSameColorTrialCount: '3',
+      level2NaviSameColorSuccessCount: '4'
     });
 
     expect(result.errors).toContain('BIG回数が総ゲーム数を超えています');
+    expect(result.errors).toContain('REG中の青7揃い回数合計がREGゲーム数を超えています');
     expect(result.errors).toContain('ART中共通ベル回数がARTゲーム数を超えています');
+    expect(result.errors).toContain('同色BB後のLv2ナビの発生回数が試行回数を超えています');
     expect(result.result).toBeNull();
   });
 
@@ -112,5 +122,64 @@ describe('calculateUmineko2Inference', () => {
     });
 
     expect(highArt.result.probabilityOverEqual4).toBeGreaterThan(lowArt.result.probabilityOverEqual4);
+  });
+
+  it('uses truth point events in the likelihood calculation', () => {
+    const lowTruth = calculateUmineko2Inference({
+      totalGames: '3200',
+      bigCount: '10',
+      regCount: '8',
+      truthPointEvents: [{ id: '1', point: '30pt' }, { id: '2', point: '30pt' }, { id: '3', point: '50pt' }]
+    });
+    const highTruth = calculateUmineko2Inference({
+      totalGames: '3200',
+      bigCount: '10',
+      regCount: '8',
+      truthPointEvents: [{ id: '1', point: '70pt' }, { id: '2', point: '200pt' }, { id: '3', point: '200pt' }]
+    });
+
+    expect(lowTruth.usedMetrics.map((metric) => metric.key)).toContain('truthPointPattern');
+    expect(highTruth.result.probabilityOverEqual4).toBeGreaterThan(lowTruth.result.probabilityOverEqual4);
+  });
+
+  it('uses replay reg special bonuses when recorded', () => {
+    const noReplayReg = calculateUmineko2Inference({
+      totalGames: '4000',
+      bigCount: '12',
+      regCount: '10',
+      specialBonuses: []
+    });
+    const withReplayReg = calculateUmineko2Inference({
+      totalGames: '4000',
+      bigCount: '12',
+      regCount: '10',
+      specialBonuses: [
+        { id: '1', trigger: 'リプレイ', bonusType: 'REG', bonusColor: '白' },
+        { id: '2', trigger: 'リプレイ', bonusType: 'REG', bonusColor: '赤' }
+      ]
+    });
+
+    expect(withReplayReg.usedMetrics.map((metric) => metric.key)).toContain('replayReg');
+    expect(withReplayReg.result.probabilityOverEqual4).toBeGreaterThan(noReplayReg.result.probabilityOverEqual4);
+  });
+
+  it('uses level2 navi trial and success counts', () => {
+    const lowLevel2 = calculateUmineko2Inference({
+      totalGames: '3000',
+      bigCount: '9',
+      regCount: '8',
+      level2NaviOtherTrialCount: '20',
+      level2NaviOtherSuccessCount: '3'
+    });
+    const highLevel2 = calculateUmineko2Inference({
+      totalGames: '3000',
+      bigCount: '9',
+      regCount: '8',
+      level2NaviOtherTrialCount: '20',
+      level2NaviOtherSuccessCount: '8'
+    });
+
+    expect(highLevel2.usedMetrics.map((metric) => metric.key)).toContain('level2NaviOther');
+    expect(highLevel2.result.probabilityOverEqual4).toBeGreaterThan(lowLevel2.result.probabilityOverEqual4);
   });
 });

@@ -261,10 +261,10 @@ describe('App', () => {
 
     expect(await screen.findByText('真実ポイントを追加')).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByRole('combobox', { name: '真実ポイント' }), '500pt以上');
+    await user.selectOptions(screen.getByRole('combobox', { name: '真実ポイント' }), '200pt');
     await user.click(screen.getByRole('button', { name: 'このイベントを1件追加' }));
 
-    expect(screen.getByText('真実ポイント: 500pt以上')).toBeInTheDocument();
+    expect(screen.getByText('真実ポイント: 200pt')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: '真実ポイント モーダルを閉じる' }));
 
     expect(screen.queryByText('真実ポイントを追加')).not.toBeInTheDocument();
