@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Calculator, History, TrendingUp, LineChart as LineChartIcon, BarChart as BarChartIcon, Calendar, Pencil } from 'lucide-react';
+import { Trash2, Calculator, History, TrendingUp, LineChart as LineChartIcon, BarChart as BarChartIcon, Calendar, Pencil, Cpu, Link2 } from 'lucide-react';
 
 const CHART_WIDTH = 520;
 const CHART_HEIGHT = 240;
@@ -216,7 +216,7 @@ const DataBox = ({ label, value, color = 'text-slate-600' }) => (
   </div>
 );
 
-export const RecordItem = ({ record, onDelete, onEdit }) => (
+export const RecordItem = ({ record, onDelete, onEdit, onOpenSettingInference, hasLinkedInference = false }) => (
   <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 group hover:border-indigo-200 transition-all text-left">
     <div className="flex justify-between items-start mb-3">
       <div className="flex items-center gap-3">
@@ -236,6 +236,16 @@ export const RecordItem = ({ record, onDelete, onEdit }) => (
         </div>
       </div>
       <div className="flex gap-2 opacity-100">
+        {onOpenSettingInference && (
+          <button
+            type="button"
+            onClick={() => onOpenSettingInference(record)}
+            className={`transition-colors px-2 py-1 ${hasLinkedInference ? 'text-indigo-600 hover:text-indigo-500' : 'text-slate-900 hover:text-slate-700'}`}
+            aria-label={`設定推測を開く: ${record.date} ${record.machineName}`}
+          >
+            <Cpu size={16} />
+          </button>
+        )}
         <button
           type="button"
           onClick={() => onEdit(record.id)}
@@ -261,6 +271,12 @@ export const RecordItem = ({ record, onDelete, onEdit }) => (
       <DataBox label="技術ミス" value={`${record.totalMisses || 0}回`} color="text-rose-400" />
       <DataBox label="損失合計" value={`-${record.totalLoss}枚`} color="text-rose-500" />
     </div>
+    {hasLinkedInference && (
+      <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-black text-indigo-600">
+        <Link2 size={12} />
+        設定推測と連携済み
+      </div>
+    )}
   </div>
 );
 
@@ -488,6 +504,71 @@ export const RecentHistorySection = ({ records, onEdit, onDelete }) => {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+};
+
+const formatSessionDate = (session) => {
+  if (session.linkedRecordDate) {
+    return session.linkedRecordDate;
+  }
+
+  const timestamp = session.updatedAt?.toDate?.() || session.createdAt?.toDate?.();
+  if (!timestamp) {
+    return '日付未設定';
+  }
+
+  return timestamp.toISOString().split('T')[0];
+};
+
+export const SettingInferenceSessionSection = ({ sessions, onOpenSettingInference }) => {
+  if (sessions.length === 0) {
+    return (
+      <div className="mt-8 rounded-2xl border border-slate-100 bg-slate-50 p-6">
+        <h3 className="flex items-center gap-2 text-sm font-bold text-slate-600">
+          <Cpu size={16} />
+          設定推測履歴
+        </h3>
+        <p className="py-4 text-center text-[11px] text-slate-400">保存済みの設定推測はまだありません</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8 space-y-3">
+      <h3 className="flex items-center gap-2 text-sm font-bold text-slate-600">
+        <Cpu size={16} />
+        設定推測履歴
+      </h3>
+      <div className="space-y-2">
+        {sessions.map((session) => (
+          <div key={session.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm font-black text-slate-800">
+                  {formatSessionDate(session)} / 最有力 設定{session.result?.mostLikelySetting ?? '-'}
+                </div>
+                <div className="mt-1 text-xs font-semibold text-slate-500">
+                  設定4以上 {session.result?.percentageOverEqual4?.toFixed?.(1) ?? '-'}% / 設定5以上 {session.result?.percentageOverEqual5?.toFixed?.(1) ?? '-'}%
+                </div>
+                {session.linkedRecordId && (
+                  <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-[11px] font-black text-indigo-600">
+                    <Link2 size={12} />
+                    収支レコード連携済み
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenSettingInference(session)}
+                className="min-h-11 rounded-xl border border-slate-200 px-4 text-sm font-black text-slate-700"
+              >
+                設定推測を開く
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

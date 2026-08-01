@@ -10,6 +10,7 @@ import { subscribeToRecords, createRecord, updateRecord, deleteRecord as deleteR
 import { loginAnonymously, subscribeToAuthState, logout, signInWithGoogle } from './firebase/auth';
 import { isFirebaseConfigured } from './firebase/config';
 import { SettingInferenceScreen } from './features/settingInference/components/SettingInferenceScreen';
+import { subscribeToSettingInferenceSessions } from './features/settingInference/storage/firestoreStorage';
 import { AppHeader } from './components/AppHeader';
 import { AppSidebar } from './components/AppSidebar';
 import { DateFilterPanel } from './components/DateFilterPanel';
@@ -17,6 +18,7 @@ import {
   ChartSection,
   StatCard,
   RecordItem,
+  SettingInferenceSessionSection,
   InputSelect,
   InputPlain,
   GamesBonusSection,
@@ -31,6 +33,7 @@ import {
 
 const DEFAULT_DETAIL_FIELDS = { mid: true, right: true };
 const APP_UI_STATE_KEY = 'app-ui-state-v1';
+const UMINEKO_MACHINE_NAME = 'うみねこのなく頃に2';
 
 const loadUiState = () => {
   if (typeof window === 'undefined') {
@@ -85,8 +88,10 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [records, setRecords] = useState([]);
+  const [settingInferenceSessions, setSettingInferenceSessions] = useState([]);
   const [hasMigratedData, setHasMigratedData] = useState(false);
   const [allowGuestInference, setAllowGuestInference] = useState(false);
+  const [settingInferenceContext, setSettingInferenceContext] = useState(null);
   const [restoredScrollY, setRestoredScrollY] = useState(() => {
     const uiState = loadUiState();
     return Number.isFinite(uiState.scrollY) ? uiState.scrollY : null;
@@ -128,6 +133,15 @@ const App = () => {
       const unsubscribe = subscribeToRecords(setRecords);
       return unsubscribe;
     }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setSettingInferenceSessions([]);
+      return undefined;
+    }
+
+    return subscribeToSettingInferenceSessions(setSettingInferenceSessions);
   }, [user]);
   const [activeTab, setActiveTab] = useState(() => {
     const uiState = loadUiState();
@@ -199,6 +213,12 @@ const App = () => {
   }, [dateRangeStart, dateRangeEnd]);
 
   const dashboardChartData = useMemo(() => getChartDataForRecords(filterRecordsByDateRange(records)), [records, filterRecordsByDateRange]);
+
+  const getSettingInferenceSessionDate = useCallback((session) => {
+    if (session.linkedRecordDate) return session.linkedRecordDate;
+    const timestamp = session.updatedAt?.toDate?.() || session.createdAt?.toDate?.();
+    return timestamp ? timestamp.toISOString().split('T')[0] : '';
+  }, []);
   
   const machineSpecificData = useMemo(() => {
     const allMachineRecords = records.filter(r => r.machineName === selectedMachineTab);
@@ -210,8 +230,20 @@ const App = () => {
       ? Math.round(techAccuracyValues.reduce((a, b) => a + b, 0) / techAccuracyValues.length)
       : 0;
 
+    const filteredInferenceSessions = selectedMachineTab === UMINEKO_MACHINE_NAME
+      ? settingInferenceSessions.filter((session) => {
+        if (session.machineId !== 'umineko2') return false;
+        const sessionDate = getSettingInferenceSessionDate(session);
+        if (!dateRangeStart && !dateRangeEnd) return true;
+        const isAfterStart = !dateRangeStart || sessionDate >= dateRangeStart;
+        const isBeforeEnd = !dateRangeEnd || sessionDate <= dateRangeEnd;
+        return isAfterStart && isBeforeEnd;
+      })
+      : [];
+
     return {
       records: filtered,
+      settingInferenceSessions: filteredInferenceSessions,
       chart: getChartDataForRecords(filtered),
       stats: {
         yen: filtered.reduce((acc, r) => acc + r.profitYen, 0),
@@ -220,9 +252,10 @@ const App = () => {
         big: filtered.reduce((acc, r) => acc + (r.stats?.personal?.big || 0), 0),
         reg: filtered.reduce((acc, r) => acc + (r.stats?.personal?.reg || 0), 0),
         techAccuracy: avgTechAccuracy,
+        inferenceCount: filteredInferenceSessions.length,
       }
     };
-  }, [records, selectedMachineTab, filterRecordsByDateRange]);
+  }, [records, selectedMachineTab, filterRecordsByDateRange, settingInferenceSessions, getSettingInferenceSessionDate, dateRangeStart, dateRangeEnd]);
 
   const totalStats = useMemo(() => {
     const filteredRecords = filterRecordsByDateRange(records);
@@ -345,6 +378,30 @@ const App = () => {
     setFormData(createInitialFormData());
     setShowForm(true);
     setActiveTab('form');
+  };
+
+  const openSettingInferenceForRecord = (record) => {
+    setSettingInferenceContext({
+      sessionId: null,
+      input: null,
+      linkedRecordId: record.id,
+      linkedRecordDate: record.date,
+      key: `record-${record.id}`
+    });
+    setActiveTab('setting-inference');
+    setIsSidebarOpen(false);
+  };
+
+  const openSavedSettingInferenceSession = (session) => {
+    setSettingInferenceContext({
+      sessionId: session.id,
+      input: session.input,
+      linkedRecordId: session.linkedRecordId || null,
+      linkedRecordDate: session.linkedRecordDate || getSettingInferenceSessionDate(session),
+      key: `session-${session.id}`
+    });
+    setActiveTab('setting-inference');
+    setIsSidebarOpen(false);
   };
 
   const cancelEdit = () => {
@@ -507,6 +564,7 @@ const App = () => {
           setIsSidebarOpen(false);
         }}
         onSelectSettingInference={() => {
+          setSettingInferenceContext(null);
           setActiveTab('setting-inference');
           setIsSidebarOpen(false);
         }}
@@ -558,12 +616,18 @@ const App = () => {
                 <StatCard title="技術欠損" value={`-${machineSpecificData.stats.loss.toLocaleString()}枚`} color="text-rose-500" />
                 <StatCard title="BIG回数" value={`${machineSpecificData.stats.big}回`} color="text-indigo-600" />
                 <StatCard title="REG回数" value={`${machineSpecificData.stats.reg}回`} color="text-indigo-400" />
-                <StatCard title="技術精度" value={`${machineSpecificData.stats.techAccuracy}%`} color="text-amber-600" />
+                <StatCard title={selectedMachineTab === UMINEKO_MACHINE_NAME ? '設定推測保存数' : '技術精度'} value={selectedMachineTab === UMINEKO_MACHINE_NAME ? `${machineSpecificData.stats.inferenceCount}件` : `${machineSpecificData.stats.techAccuracy}%`} color={selectedMachineTab === UMINEKO_MACHINE_NAME ? 'text-indigo-600' : 'text-amber-600'} />
               </div>
               {machineSpecificData.chart.length > 0 ? (
                 <ChartSection data={machineSpecificData.chart} lossType={lossChartType} setLossType={setLossChartType} />
               ) : (
                 <div className="bg-white p-12 rounded-3xl text-center text-slate-400 font-bold border-2 border-dashed border-slate-200">データがまだありません</div>
+              )}
+              {selectedMachineTab === UMINEKO_MACHINE_NAME && (
+                <SettingInferenceSessionSection
+                  sessions={machineSpecificData.settingInferenceSessions}
+                  onOpenSettingInference={openSavedSettingInferenceSession}
+                />
               )}
             </>
           )}
@@ -572,13 +636,33 @@ const App = () => {
             <div className="space-y-4 mt-4 text-left">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{activeTab === 'history' ? '全履歴' : `${selectedMachineTab} の履歴`}</h3>
               {(activeTab === 'history' ? filterRecordsByDateRange(records) : machineSpecificData.records).map((r) => {
-                return <RecordItem key={r.id} record={r} onDelete={deleteRecord} onEdit={loadRecordForEdit} />;
+                const linkedInference = selectedMachineTab === UMINEKO_MACHINE_NAME
+                  ? machineSpecificData.settingInferenceSessions.find((session) => session.linkedRecordId === r.id)
+                  : null;
+                return (
+                  <RecordItem
+                    key={r.id}
+                    record={r}
+                    onDelete={deleteRecord}
+                    onEdit={loadRecordForEdit}
+                    onOpenSettingInference={r.machineName === UMINEKO_MACHINE_NAME ? openSettingInferenceForRecord : null}
+                    hasLinkedInference={Boolean(linkedInference)}
+                  />
+                );
               })}
             </div>
           )}
 
           {activeTab === 'setting-inference' && (
-            <SettingInferenceScreen />
+            <SettingInferenceScreen
+              key={settingInferenceContext?.key || 'default-setting-inference'}
+              linkedRecordId={settingInferenceContext?.linkedRecordId || null}
+              linkedRecordDate={settingInferenceContext?.linkedRecordDate || null}
+              initialOverride={settingInferenceContext ? {
+                sessionId: settingInferenceContext.sessionId,
+                input: settingInferenceContext.input
+              } : null}
+            />
           )}
         </div>
 

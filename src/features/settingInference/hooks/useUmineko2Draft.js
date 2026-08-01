@@ -18,17 +18,25 @@ const normalizeTextValue = (value) => {
 
 const createEntryId = () => `entry-${crypto.randomUUID()}`;
 
-export const useUmineko2Draft = () => {
+export const useUmineko2Draft = (initialOverride = null) => {
   const initialDraft = loadSettingInferenceDraft();
+  const baseDraft = initialOverride ? {
+    ...initialDraft,
+    sessionId: initialOverride.sessionId ?? initialDraft.sessionId,
+    input: {
+      ...initialDraft.input,
+      ...(initialOverride.input || {})
+    }
+  } : initialDraft;
   const migratedInput = {
-    ...initialDraft.input,
-    regDiagonalBlue7Count: initialDraft.input.regDiagonalBlue7Count || initialDraft.input.rbDiagonalBlue7Count || ''
+    ...baseDraft.input,
+    regDiagonalBlue7Count: baseDraft.input.regDiagonalBlue7Count || baseDraft.input.rbDiagonalBlue7Count || ''
   };
   const [input, setInput] = useState({
     ...UMINEKO2_PHASE1_DEFAULT_INPUT,
     ...migratedInput
   });
-  const [sessionId, setSessionId] = useState(initialDraft.sessionId || null);
+  const [sessionId, setSessionId] = useState(baseDraft.sessionId || null);
 
   useEffect(() => {
     saveSettingInferenceDraft({ sessionId, input });

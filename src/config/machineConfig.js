@@ -70,6 +70,20 @@ export const MACHINE_CONFIG = {
       right: false
     }
   },
+  'うみねこのなく頃に2': {
+    machineSection: 'other',
+    detailVariant: 'other',
+    regMax: 0,
+    techLossPerMiss: 0,
+    watermelonLoss: 0,
+    cherryLoss: 0,
+    watermelonName: '小役',
+    cherryName: '小役',
+    detailFields: {
+      mid: false,
+      right: false
+    }
+  },
   [FALLBACK_MACHINE]: {
     machineSection: 'other',
     detailVariant: 'other',

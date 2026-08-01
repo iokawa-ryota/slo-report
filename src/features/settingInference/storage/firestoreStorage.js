@@ -1,4 +1,4 @@
-import { collection, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db, auth, isFirebaseConfigured } from '../../../firebase/config';
 import { getCurrentUser } from '../../../firebase/auth';
 import {
@@ -28,7 +28,7 @@ export const canSyncSettingInference = () => {
   return Boolean(isFirebaseConfigured && db && auth && user && getUserEmail());
 };
 
-export const saveSettingInferenceSession = async ({ sessionId, input, result }) => {
+export const saveSettingInferenceSession = async ({ sessionId, input, result, linkedRecordId = null, linkedRecordDate = null }) => {
   if (!canSyncSettingInference()) {
     throw new Error('同期保存にはGoogleログインが必要です');
   }
@@ -46,10 +46,37 @@ export const saveSettingInferenceSession = async ({ sessionId, input, result }) 
     calculationVersion: UMINEKO2_CALCULATION_VERSION,
     input,
     result,
+    linkedRecordId,
+    linkedRecordDate,
     ...timestamps
   }, { merge: true });
 
   return targetId;
+};
+
+const mapSettingInferenceDoc = (snapshot) => ({
+  id: snapshot.id,
+  ...snapshot.data()
+});
+
+export const subscribeToSettingInferenceSessions = (callback) => {
+  if (!canSyncSettingInference()) {
+    callback([]);
+    return () => {};
+  }
+
+  const userIdentifier = getCurrentUserIdentifier();
+  const q = query(
+    collection(db, 'users', userIdentifier, 'settingInferences'),
+    orderBy('updatedAt', 'desc')
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(mapSettingInferenceDoc));
+  }, (error) => {
+    console.error('❌ settingInferences query error:', error.code, error.message);
+    callback([]);
+  });
 };
 
 export const getSettingInferenceSaveErrorMessage = (error) => {

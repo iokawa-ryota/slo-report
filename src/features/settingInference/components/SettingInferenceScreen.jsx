@@ -157,7 +157,11 @@ const createDefaultBonusDraft = () => ({
   bonusColor: UMINEKO2_BIG_COLOR_OPTIONS[0]
 });
 
-export const SettingInferenceScreen = () => {
+export const SettingInferenceScreen = ({
+  initialOverride = null,
+  linkedRecordId = null,
+  linkedRecordDate = null
+}) => {
   const {
     input,
     sessionId,
@@ -169,7 +173,7 @@ export const SettingInferenceScreen = () => {
     addListEntry,
     removeListEntry,
     resetDraft
-  } = useUmineko2Draft();
+  } = useUmineko2Draft(initialOverride);
   const [saveMessage, setSaveMessage] = useState('');
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -209,7 +213,9 @@ export const SettingInferenceScreen = () => {
       const nextSessionId = await saveSettingInferenceSession({
         sessionId,
         input,
-        result: inference.result
+        result: inference.result,
+        linkedRecordId,
+        linkedRecordDate
       });
       setSessionId(nextSessionId);
       setSaveMessage('Firestoreへ保存しました');
@@ -257,6 +263,11 @@ export const SettingInferenceScreen = () => {
           <div>
             <h3 className="text-sm font-black text-slate-800">入力</h3>
             <p className="mt-1 text-xs text-slate-500">未入力は除外、0 は実測値として扱います。入力内容は自動保存されます。</p>
+            {linkedRecordId && (
+              <p className="mt-2 text-xs font-bold text-indigo-600">
+                連携中の収支レコード: {linkedRecordDate || '日付なし'} / {linkedRecordId}
+              </p>
+            )}
           </div>
           <button
             type="button"
