@@ -12,6 +12,7 @@ import { isFirebaseConfigured } from './firebase/config';
 import { SettingInferenceScreen } from './features/settingInference/components/SettingInferenceScreen';
 import { subscribeToSettingInferenceSessions } from './features/settingInference/storage/firestoreStorage';
 import { AppHeader } from './components/AppHeader';
+import { AppBody, AppBodySection, AppBodyTitle } from './components/AppBody';
 import { AppSidebar } from './components/AppSidebar';
 import { DateFilterPanel } from './components/DateFilterPanel';
 import {
@@ -596,7 +597,7 @@ const App = () => {
         selectedMachineTab={selectedMachineTab}
       />
 
-      <main className="flex-1 flex flex-col min-h-screen relative overflow-x-hidden">
+      <main className="flex-1 flex min-h-screen flex-col relative">
         <AppHeader
           activeTab={activeTab}
           selectedMachineTab={selectedMachineTab}
@@ -604,7 +605,7 @@ const App = () => {
           onCreateRecord={openNewRecordForm}
         />
 
-        <div className="pt-24 p-6 md:p-8 max-w-6xl mx-auto w-full">
+        <AppBody>
           {activeTab !== 'setting-inference' && (
             <DateFilterPanel
               startDate={dateRangeStart}
@@ -619,7 +620,7 @@ const App = () => {
           )}
 
           {activeTab === 'dashboard' && (
-            <>
+            <AppBodySection>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <StatCard title="全機種 累計収支" value={`${totalStats.yen.toLocaleString()}円`} color={totalStats.yen >= 0 ? "text-emerald-600" : "text-rose-600"} />
                 <StatCard title="全機種 累計欠損" value={`-${totalStats.loss.toLocaleString()}枚`} color="text-rose-500" />
@@ -631,11 +632,11 @@ const App = () => {
                 onEdit={loadRecordForEdit}
                 onDelete={deleteRecord}
               />
-            </>
+            </AppBodySection>
           )}
 
           {activeTab === 'machine-stats' && (
-            <>
+            <AppBodySection>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                 <StatCard title="機種別収支" value={`${machineSpecificData.stats.yen.toLocaleString()}円`} color={machineSpecificData.stats.yen >= 0 ? "text-emerald-600" : "text-rose-600"} />
                 <StatCard title="技術欠損" value={`-${machineSpecificData.stats.loss.toLocaleString()}枚`} color="text-rose-500" />
@@ -654,12 +655,12 @@ const App = () => {
                   onOpenSettingInference={openSavedSettingInferenceSession}
                 />
               )}
-            </>
+            </AppBodySection>
           )}
 
           {(activeTab === 'history' || (activeTab === 'machine-stats' && machineSpecificData.records.length > 0)) && (
-            <div className="space-y-4 mt-4 text-left">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{activeTab === 'history' ? '全履歴' : `${selectedMachineTab} の履歴`}</h3>
+            <AppBodySection className="mt-4 space-y-4 text-left">
+              <AppBodyTitle>{activeTab === 'history' ? '全履歴' : `${selectedMachineTab} の履歴`}</AppBodyTitle>
               {(activeTab === 'history' ? filterRecordsByDateRange(records) : machineSpecificData.records).map((r) => {
                 const linkedInference = selectedMachineTab === UMINEKO_MACHINE_NAME
                   ? machineSpecificData.settingInferenceSessions.find((session) => session.linkedRecordId === r.id)
@@ -675,7 +676,7 @@ const App = () => {
                   />
                 );
               })}
-            </div>
+            </AppBodySection>
           )}
 
           {activeTab === 'setting-inference' && (
@@ -689,7 +690,7 @@ const App = () => {
               } : null}
             />
           )}
-        </div>
+        </AppBody>
 
         {showForm && (
           <div className="fixed inset-0 z-[60] flex items-start justify-center bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-hidden sm:items-center sm:p-4">

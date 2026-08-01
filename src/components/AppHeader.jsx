@@ -29,9 +29,9 @@ export const AppHeader = ({
 }) => (
   <header
     data-ui="app-header"
-    className="fixed top-0 left-0 right-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 lg:left-64"
+    className="fixed top-0 left-0 right-0 z-30 flex min-h-20 items-center justify-between border-b border-slate-200 bg-white px-6 py-4 lg:left-64"
   >
-    <div className="flex items-center gap-4">
+    <div className="flex min-w-0 items-center gap-4">
       <button
         type="button"
         onClick={onOpenSidebar}
@@ -40,7 +40,7 @@ export const AppHeader = ({
       >
         <Menu size={24} />
       </button>
-      <div className="flex items-center gap-2 text-sm font-black text-slate-800">
+      <div className="min-w-0 truncate text-sm font-black text-slate-800">
         {getHeaderTitle(activeTab, selectedMachineTab)}
       </div>
     </div>
