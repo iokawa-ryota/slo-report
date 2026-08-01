@@ -195,6 +195,41 @@ describe('App', () => {
     expect(document.querySelector('#recent-history-section .group > div')).toHaveClass('flex-col', 'sm:flex-row');
   });
 
+  it('stores umineko detail input inside the record form flow', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: 'データ入力' })[0]);
+    await user.selectOptions(document.querySelector('select[name="machineName"]'), 'うみねこのなく頃に2');
+
+    await user.type(document.querySelector('input[name="investment"]'), '1000');
+    await user.type(document.querySelector('input[name="recovery"]'), '1200');
+    await user.type(document.querySelector('input[name="totalGames"]'), '2400');
+    await user.type(document.querySelector('input[name="bigCount"]'), '7');
+    await user.type(document.querySelector('input[name="regCount"]'), '9');
+
+    await user.click(screen.getByText('詳細データ'));
+    await user.click(screen.getByText('ART系'));
+    await user.type(screen.getByRole('textbox', { name: 'Lv1' }), '2');
+    await user.type(screen.getByRole('textbox', { name: 'ART中共通ベル回数' }), '5');
+
+    await user.click(screen.getByRole('button', { name: '記録を保存する' }));
+
+    expect(createRecordMock).toHaveBeenCalledWith(expect.objectContaining({
+      machineName: 'うみねこのなく頃に2',
+      totalGames: '2400',
+      bigCount: '7',
+      regCount: '9',
+      uminekoInferenceInput: expect.objectContaining({
+        totalGames: '2400',
+        bigCount: '7',
+        regCount: '9',
+        artLevel1Count: '2',
+        artCommonBellCount: '5'
+      })
+    }));
+  });
+
   it('allows local setting inference usage without login', async () => {
     const user = userEvent.setup();
     render(<App />);

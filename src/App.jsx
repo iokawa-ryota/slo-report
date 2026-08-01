@@ -10,7 +10,13 @@ import { subscribeToRecords, createRecord, updateRecord, deleteRecord as deleteR
 import { loginAnonymously, subscribeToAuthState, logout, signInWithGoogle } from './firebase/auth';
 import { isFirebaseConfigured } from './firebase/config';
 import { SettingInferenceScreen } from './features/settingInference/components/SettingInferenceScreen';
-import { subscribeToSettingInferenceSessions } from './features/settingInference/storage/firestoreStorage';
+import { UminekoInferenceFields } from './features/settingInference/components/UminekoInferenceFields';
+import { useUmineko2Draft } from './features/settingInference/hooks/useUmineko2Draft';
+import {
+  canSyncSettingInference,
+  saveSettingInferenceSession,
+  subscribeToSettingInferenceSessions
+} from './features/settingInference/storage/firestoreStorage';
 import { AppHeader } from './components/AppHeader';
 import { AppBody, AppBodySection, AppBodyTitle } from './components/AppBody';
 import { AppSidebar } from './components/AppSidebar';
@@ -83,6 +89,20 @@ const createInitialFormData = () => ({
   cherryLossCount: '0',
   otherLossCount: '0',
   memo: ''
+});
+
+const hasUminekoInferenceContent = (input) => Object.entries(input || {}).some(([, value]) => {
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+  return value !== '' && value !== null && value !== undefined;
+});
+
+const cloneUminekoInferenceInput = (input) => ({
+  ...input,
+  specialBonuses: [...(input.specialBonuses || [])],
+  truthPointEvents: [...(input.truthPointEvents || [])],
+  level2NaviEvents: [...(input.level2NaviEvents || [])]
 });
 
 const App = () => {
@@ -165,6 +185,18 @@ const App = () => {
   const [dateRangeEnd, setDateRangeEnd] = useState(''); 
 
   const [formData, setFormData] = useState(createInitialFormData);
+  const {
+    input: uminekoInferenceInput,
+    sessionId: uminekoInferenceSessionId,
+    setSessionId: setUminekoInferenceSessionId,
+    inference: uminekoInference,
+    handleFieldChange: handleUminekoInferenceFieldChange,
+    clearField: clearUminekoInferenceField,
+    adjustField: adjustUminekoInferenceField,
+    addListEntry: addUminekoInferenceListEntry,
+    removeListEntry: removeUminekoInferenceListEntry,
+    replaceDraft: replaceUminekoInferenceDraft
+  } = useUmineko2Draft();
 
   const currentConfig = getMachineConfig(formData.machineName);
   const detailFields = currentConfig.detailFields || DEFAULT_DETAIL_FIELDS;
@@ -180,9 +212,20 @@ const App = () => {
         ...(nextDetailFields.mid ? {} : { midSuccess: '', midNotWatermelon: '', midMiss: '' }),
         ...(nextDetailFields.right ? {} : { rightSuccess: '', rightMiss: '' })
       }));
+      if (value === UMINEKO_MACHINE_NAME) {
+        replaceUminekoInferenceDraft({
+          ...uminekoInferenceInput,
+          totalGames: formData.totalGames || uminekoInferenceInput.totalGames,
+          bigCount: formData.bigCount || uminekoInferenceInput.bigCount,
+          regCount: formData.regCount || uminekoInferenceInput.regCount
+        }, uminekoInferenceSessionId);
+      }
       return;
     }
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (isUminekoRecordForm && ['totalGames', 'bigCount', 'regCount'].includes(name)) {
+      handleUminekoInferenceFieldChange(e);
+    }
   };
 
   const getChartDataForRecords = (targetRecords) => {
@@ -290,6 +333,10 @@ const App = () => {
     const invYen = formData.investmentUnit === '円' ? Number(formData.investment) : Number(formData.investment) * lRate;
     const recYen = formData.recoveryUnit === '円' ? Number(formData.recovery) : Math.floor(Number(formData.recovery) * ((lRate * 50) / eRate));
     const machineSection = currentConfig.machineSection || 'other';
+    const shouldPersistUminekoInference = isUminekoRecordForm && hasUminekoInferenceContent(uminekoInferenceInput);
+    const normalizedUminekoInferenceInput = shouldPersistUminekoInference
+      ? cloneUminekoInferenceInput(uminekoInferenceInput)
+      : null;
     
     const recordData = {
       date: formData.date,
@@ -344,11 +391,16 @@ const App = () => {
         cherry: Number(formData.cherryLossCount || 0),
         other: Number(formData.otherLossCount || 0),
         total: calculatedLoss.total
-      }
+      },
+      ...(isUminekoRecordForm ? {
+        uminekoInferenceInput: normalizedUminekoInferenceInput
+      } : {})
     };
 
     try {
       let savedRecordId = editingRecordId;
+      let syncedInferenceSessionId = uminekoInferenceSessionId;
+      let inferenceSyncWarning = '';
 
       if (editingRecordId !== null) {
         // 編集モード - Firebase を更新
@@ -357,6 +409,22 @@ const App = () => {
       } else {
         // 新規作成モード - Firebase に追加
         savedRecordId = await createRecord(recordData);
+      }
+
+      if (shouldPersistUminekoInference && savedRecordId && uminekoInference.errors.length === 0 && uminekoInference.result && canSyncSettingInference()) {
+        try {
+          syncedInferenceSessionId = await saveSettingInferenceSession({
+            sessionId: uminekoInferenceSessionId,
+            input: normalizedUminekoInferenceInput,
+            result: uminekoInference.result,
+            linkedRecordId: savedRecordId,
+            linkedRecordDate: recordData.date
+          });
+          setUminekoInferenceSessionId(syncedInferenceSessionId);
+        } catch (error) {
+          console.error('Error syncing umineko setting inference:', error);
+          inferenceSyncWarning = '実戦記録は保存しましたが、設定推測の同期保存には失敗しました。';
+        }
       }
 
       const shouldOpenInference = openInferenceAfterSave && formData.machineName === UMINEKO_MACHINE_NAME && savedRecordId;
@@ -369,9 +437,15 @@ const App = () => {
       if (shouldOpenInference) {
         openSettingInferenceForRecord({
           id: savedRecordId,
-          date: recordData.date
+          date: recordData.date,
+          input: normalizedUminekoInferenceInput,
+          sessionId: syncedInferenceSessionId
         });
         return;
+      }
+
+      if (inferenceSyncWarning) {
+        alert(inferenceSyncWarning);
       }
     } catch (error) {
       console.error('Error saving record:', error);
@@ -392,6 +466,18 @@ const App = () => {
 
     setPreviousTab(activeTab);
     setFormData(recordToEdit);
+    if (recordToEdit.machineName === UMINEKO_MACHINE_NAME) {
+      const linkedSession = settingInferenceSessions.find((session) => session.linkedRecordId === recordId);
+      replaceUminekoInferenceDraft(
+        {
+          ...(linkedSession?.input || recordToEdit.uminekoInferenceInput || {}),
+          totalGames: recordToEdit.totalGames || '',
+          bigCount: recordToEdit.bigCount || '',
+          regCount: recordToEdit.regCount || ''
+        },
+        linkedSession?.id || null
+      );
+    }
     setEditingRecordId(recordId);
     setShowForm(true);
     setActiveTab('form');
@@ -407,8 +493,8 @@ const App = () => {
 
   const openSettingInferenceForRecord = (record) => {
     setSettingInferenceContext({
-      sessionId: null,
-      input: null,
+      sessionId: record.sessionId || null,
+      input: record.input || record.uminekoInferenceInput || null,
       linkedRecordId: record.id,
       linkedRecordDate: record.date,
       key: `record-${record.id}`
@@ -715,37 +801,57 @@ const App = () => {
                 <InvestmentRecoverySection formData={formData} handleInputChange={handleInputChange} />
 
                 {isUminekoRecordForm && (
-                  <div className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4">
-                    <div>
-                      <div className="text-xs font-black uppercase text-indigo-600">うみねこ実戦メモ</div>
-                      <p className="mt-2 text-sm font-semibold text-slate-700">
-                        収支記録を保存したあと、この実戦に紐づけて設定推測を残せます。
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        新規記録では「保存して設定推測へ」、編集時は連携済みセッションの再編集もできます。
-                      </p>
-                    </div>
-                    {editingRecordId !== null && (
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <button
-                          type="button"
-                          onClick={() => openSettingInferenceForRecord({ id: editingRecordId, date: formData.date })}
-                          className="min-h-11 rounded-xl border border-indigo-200 bg-white px-4 text-sm font-black text-indigo-700"
-                        >
-                          {linkedInferenceSessionForEditing ? '連携中の設定推測を開く' : 'この実戦の設定推測を開く'}
-                        </button>
-                        {linkedInferenceSessionForEditing && (
-                          <button
-                            type="button"
-                            onClick={() => openSavedSettingInferenceSession(linkedInferenceSessionForEditing)}
-                            className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
-                          >
-                            保存済み設定推測を再編集
-                          </button>
+                  <details id="umineko-detail-section" className="rounded-2xl border border-indigo-100 bg-indigo-50/70" open={false}>
+                    <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-4">
+                      <div>
+                        <div className="text-xs font-black uppercase text-indigo-600">詳細データ</div>
+                        <p className="mt-1 text-xs text-slate-500">技術介入と設定要素を必要なときだけ記録します。</p>
+                      </div>
+                      <span className="text-xs font-black text-indigo-600">開く</span>
+                    </summary>
+                    <div className="space-y-4 border-t border-indigo-100 p-4">
+                      <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
+                        <p className="text-sm font-semibold text-slate-700">
+                          実戦記録と一緒にうみねこの設定要素を保持します。Googleログイン済みの場合は設定推測セッションにも同期します。
+                        </p>
+                        {editingRecordId !== null && (
+                          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                            <button
+                              type="button"
+                              onClick={() => openSettingInferenceForRecord({
+                                id: editingRecordId,
+                                date: formData.date,
+                                input: uminekoInferenceInput,
+                                sessionId: linkedInferenceSessionForEditing?.id || uminekoInferenceSessionId
+                              })}
+                              className="min-h-11 rounded-xl border border-indigo-200 bg-white px-4 text-sm font-black text-indigo-700"
+                            >
+                              {linkedInferenceSessionForEditing ? '連携中の設定推測を開く' : 'この実戦の設定推測を開く'}
+                            </button>
+                            {linkedInferenceSessionForEditing && (
+                              <button
+                                type="button"
+                                onClick={() => openSavedSettingInferenceSession(linkedInferenceSessionForEditing)}
+                                className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
+                              >
+                                保存済み設定推測を再編集
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
+
+                      <UminekoInferenceFields
+                        input={uminekoInferenceInput}
+                        handleFieldChange={handleUminekoInferenceFieldChange}
+                        adjustField={adjustUminekoInferenceField}
+                        clearField={clearUminekoInferenceField}
+                        addListEntry={addUminekoInferenceListEntry}
+                        removeListEntry={removeUminekoInferenceListEntry}
+                        showTopCounters={false}
+                      />
+                    </div>
+                  </details>
                 )}
 
                 <div id="memo-section" className="space-y-2">

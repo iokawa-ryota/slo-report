@@ -105,6 +105,14 @@ export const useUmineko2Draft = (initialOverride = null) => {
     clearSettingInferenceDraft();
   };
 
+  const replaceDraft = (nextInput = {}, nextSessionId = null) => {
+    setInput({
+      ...UMINEKO2_PHASE1_DEFAULT_INPUT,
+      ...(nextInput || {})
+    });
+    setSessionId(nextSessionId);
+  };
+
   return {
     input,
     sessionId,
@@ -117,6 +125,7 @@ export const useUmineko2Draft = (initialOverride = null) => {
     addListEntry,
     updateListEntry,
     removeListEntry,
-    resetDraft
+    resetDraft,
+    replaceDraft
   };
 };
