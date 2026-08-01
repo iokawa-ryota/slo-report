@@ -127,7 +127,7 @@ describe('App', () => {
     expect(screen.queryByText('Google でサインイン')).not.toBeInTheDocument();
     expect(screen.getByText('v9.0.0 - Local Save Mode')).toBeInTheDocument();
     expect(document.querySelector('header')).toHaveClass('fixed', 'top-0', 'left-0', 'right-0');
-    expect(document.querySelector('main > div')).toHaveClass('pt-20');
+    expect(document.querySelector('main > div')).toHaveClass('pt-24');
   });
 
   it('does not submit the form when changing the lending rate', async () => {

@@ -604,7 +604,7 @@ const App = () => {
           onCreateRecord={openNewRecordForm}
         />
 
-        <div className="pt-20 p-6 md:p-8 max-w-6xl mx-auto w-full">
+        <div className="pt-24 p-6 md:p-8 max-w-6xl mx-auto w-full">
           {activeTab !== 'setting-inference' && (
             <DateFilterPanel
               startDate={dateRangeStart}
