@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { 
   PlusCircle, 
   X,
@@ -154,7 +154,9 @@ const App = () => {
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [openInferenceAfterSave, setOpenInferenceAfterSave] = useState(false);
   const [calcMode, setCalcMode] = useState('detail'); 
+  const recordFormRef = useRef(null);
   const [isMidStart, setIsMidStart] = useState(false); 
   const [lossChartType, setLossChartType] = useState('bar');
   const [editingRecordId, setEditingRecordId] = useState(null);
@@ -273,6 +275,13 @@ const App = () => {
     return calculateLoss({ formData, calcMode, currentConfig, detailFields });
   }, [formData, currentConfig, calcMode, detailFields]);
 
+  const isUminekoRecordForm = formData.machineName === UMINEKO_MACHINE_NAME;
+  const linkedInferenceSessionForEditing = useMemo(() => (
+    editingRecordId
+      ? settingInferenceSessions.find((session) => session.linkedRecordId === editingRecordId) || null
+      : null
+  ), [editingRecordId, settingInferenceSessions]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const lRate = Number(formData.lendingRate);
@@ -338,21 +347,35 @@ const App = () => {
     };
 
     try {
+      let savedRecordId = editingRecordId;
+
       if (editingRecordId !== null) {
         // 編集モード - Firebase を更新
         await updateRecord(editingRecordId, recordData);
         setActiveTab(previousTab);
       } else {
         // 新規作成モード - Firebase に追加
-        await createRecord(recordData);
+        savedRecordId = await createRecord(recordData);
       }
+
+      const shouldOpenInference = openInferenceAfterSave && formData.machineName === UMINEKO_MACHINE_NAME && savedRecordId;
       
       setEditingRecordId(null);
       setShowForm(false);
       setFormData(createInitialFormData());
+      setOpenInferenceAfterSave(false);
+
+      if (shouldOpenInference) {
+        openSettingInferenceForRecord({
+          id: savedRecordId,
+          date: recordData.date
+        });
+        return;
+      }
     } catch (error) {
       console.error('Error saving record:', error);
       alert('レコードの保存に失敗しました');
+      setOpenInferenceAfterSave(false);
     }
   };
 
@@ -376,6 +399,7 @@ const App = () => {
   const openNewRecordForm = () => {
     setEditingRecordId(null);
     setFormData(createInitialFormData());
+    setOpenInferenceAfterSave(false);
     setShowForm(true);
     setActiveTab('form');
   };
@@ -407,6 +431,7 @@ const App = () => {
   const cancelEdit = () => {
     setShowForm(false);
     setActiveTab(previousTab);
+    setOpenInferenceAfterSave(false);
 
     if (editingRecordId === null) {
       setFormData(createInitialFormData());
@@ -673,7 +698,7 @@ const App = () => {
                 <h2 className="text-lg font-black text-slate-800 flex items-center gap-2"><PlusCircle className="text-indigo-600"/> {editingRecordId !== null ? '実践記録を編集' : '新規実践記録'}</h2>
                 <button type="button" aria-label="フォームを閉じる" onClick={cancelEdit} className="p-2 text-slate-400 hover:text-slate-600"><X/></button>
               </div>
-              <form onSubmit={handleSubmit} className="p-6 pb-10 space-y-6 max-h-none overflow-y-auto overflow-x-hidden text-left sm:max-h-[80vh]">
+              <form ref={recordFormRef} onSubmit={handleSubmit} className="p-6 pb-10 space-y-6 max-h-none overflow-y-auto overflow-x-hidden text-left sm:max-h-[80vh]">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <InputSelect label="機種" name="machineName" value={formData.machineName} onChange={handleInputChange} options={MACHINE_OPTIONS} />
                   <InputPlain label="日付" name="date" type="date" value={formData.date} onChange={handleInputChange} />
@@ -688,6 +713,40 @@ const App = () => {
 
                 <InvestmentRecoverySection formData={formData} handleInputChange={handleInputChange} />
 
+                {isUminekoRecordForm && (
+                  <div className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4">
+                    <div>
+                      <div className="text-xs font-black uppercase text-indigo-600">うみねこ実戦メモ</div>
+                      <p className="mt-2 text-sm font-semibold text-slate-700">
+                        収支記録を保存したあと、この実戦に紐づけて設定推測を残せます。
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        新規記録では「保存して設定推測へ」、編集時は連携済みセッションの再編集もできます。
+                      </p>
+                    </div>
+                    {editingRecordId !== null && (
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={() => openSettingInferenceForRecord({ id: editingRecordId, date: formData.date })}
+                          className="min-h-11 rounded-xl border border-indigo-200 bg-white px-4 text-sm font-black text-indigo-700"
+                        >
+                          {linkedInferenceSessionForEditing ? '連携中の設定推測を開く' : 'この実戦の設定推測を開く'}
+                        </button>
+                        {linkedInferenceSessionForEditing && (
+                          <button
+                            type="button"
+                            onClick={() => openSavedSettingInferenceSession(linkedInferenceSessionForEditing)}
+                            className="min-h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
+                          >
+                            保存済み設定推測を再編集
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div id="memo-section" className="space-y-2">
                   <label className="block text-xs font-bold text-slate-700">メモ</label>
                   <textarea
@@ -701,45 +760,59 @@ const App = () => {
                   />
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-xs font-black text-slate-700 uppercase">技術介入詳細</h3>
-                      {inputStats.personal.techAccuracy && (
-                        <span className="bg-indigo-100 text-indigo-600 text-[10px] font-black px-2 py-0.5 rounded-full">
-                          精度: {inputStats.personal.techAccuracy}%
-                        </span>
-                      )}
+                {!isUminekoRecordForm && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center border-b pb-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xs font-black text-slate-700 uppercase">技術介入詳細</h3>
+                        {inputStats.personal.techAccuracy && (
+                          <span className="bg-indigo-100 text-indigo-600 text-[10px] font-black px-2 py-0.5 rounded-full">
+                            精度: {inputStats.personal.techAccuracy}%
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex bg-slate-100 p-1 rounded-lg text-[9px] font-bold">
+                        <button type="button" onClick={() => setCalcMode('simple')} className={`px-2 py-1 rounded transition-all ${calcMode === 'simple' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>簡易</button>
+                        <button type="button" onClick={() => setCalcMode('detail')} className={`px-2 py-1 rounded transition-all ${calcMode === 'detail' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>詳細</button>
+                      </div>
                     </div>
-                    <div className="flex bg-slate-100 p-1 rounded-lg text-[9px] font-bold">
-                      <button type="button" onClick={() => setCalcMode('simple')} className={`px-2 py-1 rounded transition-all ${calcMode === 'simple' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>簡易</button>
-                      <button type="button" onClick={() => setCalcMode('detail')} className={`px-2 py-1 rounded transition-all ${calcMode === 'detail' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400'}`}>詳細</button>
-                    </div>
-                  </div>
-                  
-                  {calcMode === 'simple' ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      <InputPlain label="総試行回数" name="techAttemptCount" value={formData.techAttemptCount} onChange={handleInputChange} />
-                      <InputPlain label="失敗回数" name="techMissCount" value={formData.techMissCount} onChange={handleInputChange} />
-                    </div>
-                  ) : (
-                    <>
-                      <DetailSectionComponent formData={formData} handleInputChange={handleInputChange} />
-                    </>
-                  )}
+                    
+                    {calcMode === 'simple' ? (
+                      <div className="grid grid-cols-2 gap-4">
+                        <InputPlain label="総試行回数" name="techAttemptCount" value={formData.techAttemptCount} onChange={handleInputChange} />
+                        <InputPlain label="失敗回数" name="techMissCount" value={formData.techMissCount} onChange={handleInputChange} />
+                      </div>
+                    ) : (
+                      <>
+                        <DetailSectionComponent formData={formData} handleInputChange={handleInputChange} />
+                      </>
+                    )}
 
-                  <SmallRoleLossSection currentConfig={currentConfig} formData={formData} handleInputChange={handleInputChange} />
-                  
-                  <div className="text-center">
-                    <div className="text-[10px] font-black text-slate-400 uppercase mb-1">今回の合計損失</div>
-                    <div className="text-xl font-black text-rose-500">-{calculatedLoss.total} 枚</div>
+                    <SmallRoleLossSection currentConfig={currentConfig} formData={formData} handleInputChange={handleInputChange} />
+                    
+                    <div className="text-center">
+                      <div className="text-[10px] font-black text-slate-400 uppercase mb-1">今回の合計損失</div>
+                      <div className="text-xl font-black text-rose-500">-{calculatedLoss.total} 枚</div>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="flex gap-3">
                   <button type="submit" className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg hover:bg-indigo-700 transition-all uppercase tracking-widest text-sm">
                     {editingRecordId !== null ? '修正を保存' : '記録を保存する'}
                   </button>
+                  {isUminekoRecordForm && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpenInferenceAfterSave(true);
+                        recordFormRef.current?.requestSubmit();
+                      }}
+                      className="px-4 py-4 bg-white text-indigo-700 border border-indigo-200 rounded-2xl font-black hover:bg-indigo-50 transition-all text-sm"
+                    >
+                      保存して設定推測へ
+                    </button>
+                  )}
                   {editingRecordId !== null && (
                     <button type="button" onClick={cancelEdit} className="px-6 py-4 bg-slate-200 text-slate-700 rounded-2xl font-black hover:bg-slate-300 transition-all text-sm">
                       キャンセル
