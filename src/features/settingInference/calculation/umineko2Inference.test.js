@@ -99,6 +99,40 @@ describe('calculateUmineko2Inference', () => {
     expect(result.result).toBeNull();
   });
 
+  it('uses total games plus art games as trials for sub-role metrics', () => {
+    const result = calculateUmineko2Inference({
+      totalGames: '1000',
+      bigCount: '5',
+      regCount: '4',
+      artLevel1Count: '10',
+      artLevel2Count: '0',
+      artLevel3Count: '0',
+      oneRoleBCount: '1200'
+    });
+
+    expect(result.errors).toEqual([]);
+    expect(result.usedMetrics.find((metric) => metric.key === 'oneRoleB')).toMatchObject({
+      key: 'oneRoleB',
+      trials: 1300,
+      successes: 1200
+    });
+  });
+
+  it('returns validation errors when sub-role counts exceed total games plus art games', () => {
+    const result = calculateUmineko2Inference({
+      totalGames: '1000',
+      bigCount: '5',
+      regCount: '4',
+      artLevel1Count: '10',
+      artLevel2Count: '0',
+      artLevel3Count: '0',
+      oneRoleCCount: '1301'
+    });
+
+    expect(result.errors).toContain('1枚役Cが総ゲーム数とARTゲーム数の合計を超えています');
+    expect(result.result).toBeNull();
+  });
+
   it('normalizes probabilities to 100 percent', () => {
     const result = calculateUmineko2Inference({
       totalGames: '4200',

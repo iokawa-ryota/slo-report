@@ -126,6 +126,14 @@ const countTruthPointEvents = (truthPointEvents = []) => truthPointEvents.reduce
   '200pt': 0
 });
 
+const getSubRoleTrialGames = (normalizedInput) => {
+  if (normalizedInput.totalGames === null) {
+    return null;
+  }
+
+  return normalizedInput.totalGames + (normalizedInput.artGames || 0);
+};
+
 export const validateUmineko2Input = (rawInput) => {
   const errors = [];
   const normalizedInput = {
@@ -169,10 +177,13 @@ export const validateUmineko2Input = (rawInput) => {
     )
     : null;
   normalizedInput.artGames = derivedArtGames;
+  const subRoleTrialGames = getSubRoleTrialGames(normalizedInput);
 
   const totalGamesDependentCounts = [
     ['BIG回数', normalizedInput.bigCount],
-    ['REG回数', normalizedInput.regCount],
+    ['REG回数', normalizedInput.regCount]
+  ];
+  const subRoleDependentCounts = [
     ['1枚役B', normalizedInput.oneRoleBCount],
     ['1枚役C', normalizedInput.oneRoleCCount],
     ['確定役A', normalizedInput.confirmedRoleACount]
@@ -189,6 +200,22 @@ export const validateUmineko2Input = (rawInput) => {
       totalGamesDependentCounts.forEach(([label, count]) => {
         if (count !== null && count > normalizedInput.totalGames) {
           errors.push(`${label}が総ゲーム数を超えています`);
+        }
+      });
+    }
+  }
+
+  if (subRoleTrialGames !== null) {
+    if (subRoleTrialGames === 0) {
+      subRoleDependentCounts.forEach(([label, count]) => {
+        if ((count || 0) > 0) {
+          errors.push(`総ゲーム数とARTゲーム数の合計が0の場合、${label}は0を超えられません`);
+        }
+      });
+    } else {
+      subRoleDependentCounts.forEach(([label, count]) => {
+        if (count !== null && count > subRoleTrialGames) {
+          errors.push(`${label}が総ゲーム数とARTゲーム数の合計を超えています`);
         }
       });
     }
@@ -270,6 +297,7 @@ export const validateUmineko2Input = (rawInput) => {
 const buildUsedAndExcludedMetrics = (normalizedInput) => {
   const usedMetrics = [];
   const excludedMetrics = [];
+  const subRoleTrialGames = getSubRoleTrialGames(normalizedInput);
 
   const pushBinomialMetric = (key, trials, successes) => {
     usedMetrics.push({
@@ -332,19 +360,19 @@ const buildUsedAndExcludedMetrics = (normalizedInput) => {
     if (normalizedInput.oneRoleBCount === null) {
       pushExcluded(excludedMetrics, METRIC_KEYS.oneRoleB, '1枚役Bが未入力');
     } else {
-      pushBinomialMetric(METRIC_KEYS.oneRoleB, normalizedInput.totalGames, normalizedInput.oneRoleBCount);
+      pushBinomialMetric(METRIC_KEYS.oneRoleB, subRoleTrialGames, normalizedInput.oneRoleBCount);
     }
 
     if (normalizedInput.oneRoleCCount === null) {
       pushExcluded(excludedMetrics, METRIC_KEYS.oneRoleC, '1枚役Cが未入力');
     } else {
-      pushBinomialMetric(METRIC_KEYS.oneRoleC, normalizedInput.totalGames, normalizedInput.oneRoleCCount);
+      pushBinomialMetric(METRIC_KEYS.oneRoleC, subRoleTrialGames, normalizedInput.oneRoleCCount);
     }
 
     if (normalizedInput.confirmedRoleACount === null) {
       pushExcluded(excludedMetrics, METRIC_KEYS.confirmedRoleA, '確定役Aが未入力');
     } else {
-      pushBinomialMetric(METRIC_KEYS.confirmedRoleA, normalizedInput.totalGames, normalizedInput.confirmedRoleACount);
+      pushBinomialMetric(METRIC_KEYS.confirmedRoleA, subRoleTrialGames, normalizedInput.confirmedRoleACount);
     }
 
     if (specialBonusCounts.replayReg > 0) {

@@ -9,7 +9,7 @@ export const AppBody = ({ children, className = '' }) => (
   >
     <div
       data-ui="app-body-content"
-      className="mx-auto w-full max-w-6xl p-6 md:p-8"
+      className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 md:px-8"
     >
       {children}
     </div>
