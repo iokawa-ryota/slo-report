@@ -86,9 +86,15 @@ const ConfirmModal = ({ title, body, confirmLabel, onConfirm, onCancel }) => (
 );
 
 const EntryModal = ({ title, subtitle, countLabel, onClose, children }) => (
-  <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm">
+  <div
+    data-testid="entry-modal-overlay"
+    className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm"
+  >
     <div className="flex min-h-full items-end justify-center sm:items-center sm:p-4">
-      <div className="flex min-h-[85vh] w-full flex-col rounded-t-3xl bg-white shadow-2xl sm:min-h-0 sm:max-w-lg sm:rounded-3xl">
+      <div
+        data-testid="entry-modal-panel"
+        className="flex max-h-[100dvh] w-full min-h-0 flex-col rounded-t-3xl bg-white shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:max-w-lg sm:rounded-3xl"
+      >
         <div className="sticky top-0 z-10 border-b border-slate-100 bg-white px-4 py-4 sm:px-5">
           <div className="flex items-start justify-between gap-4">
             <div>
@@ -106,7 +112,7 @@ const EntryModal = ({ title, subtitle, countLabel, onClose, children }) => (
             </button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
           {children}
         </div>
       </div>

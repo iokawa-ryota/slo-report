@@ -287,6 +287,21 @@ describe('App', () => {
     expect(screen.getByText('単独 / REG / 白')).toBeInTheDocument();
   });
 
+  it('keeps entry modals vertically scrollable when history grows', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: '設定推測' })[0]);
+    await user.click((await screen.findAllByRole('button', { name: '追加・確認' }))[0]);
+
+    const overlay = await screen.findByTestId('entry-modal-overlay');
+    const panel = await screen.findByTestId('entry-modal-panel');
+
+    expect(overlay.className).toContain('overflow-y-auto');
+    expect(panel.className).toContain('max-h-[100dvh]');
+    expect(panel.className).toContain('min-h-0');
+  });
+
   it('manages truth point events inside a modal', async () => {
     const user = userEvent.setup();
     render(<App />);
