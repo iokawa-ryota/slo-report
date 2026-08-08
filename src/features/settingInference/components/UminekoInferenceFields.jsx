@@ -144,10 +144,10 @@ const getBonusColorOptions = (bonusType) => (
   bonusType === 'REG' ? UMINEKO2_REG_COLOR_OPTIONS : UMINEKO2_BIG_COLOR_OPTIONS
 );
 
-const createDefaultBonusDraft = () => ({
-  trigger: UMINEKO2_BONUS_TRIGGER_OPTIONS[0],
-  bonusType: 'BIG',
-  bonusColor: UMINEKO2_BIG_COLOR_OPTIONS[0]
+const createEmptyBonusDraft = () => ({
+  trigger: '',
+  bonusType: '',
+  bonusColor: ''
 });
 
 export const UminekoInferenceFields = ({
@@ -160,7 +160,7 @@ export const UminekoInferenceFields = ({
   showTopCounters = true
 }) => {
   const [pendingClearField, setPendingClearField] = useState(null);
-  const [bonusDraft, setBonusDraft] = useState(createDefaultBonusDraft);
+  const [bonusDraft, setBonusDraft] = useState(createEmptyBonusDraft);
   const [truthPointDraft, setTruthPointDraft] = useState(UMINEKO2_TRUTH_POINT_OPTIONS[0]);
   const [isSpecialBonusModalOpen, setIsSpecialBonusModalOpen] = useState(false);
   const [isTruthPointModalOpen, setIsTruthPointModalOpen] = useState(false);
@@ -186,8 +186,11 @@ export const UminekoInferenceFields = ({
   };
 
   const addSpecialBonus = () => {
+    if (!bonusDraft.trigger || !bonusDraft.bonusType || !bonusDraft.bonusColor) {
+      return;
+    }
     addListEntry('specialBonuses', bonusDraft);
-    setBonusDraft(createDefaultBonusDraft());
+    setBonusDraft(createEmptyBonusDraft());
   };
 
   const addTruthPointEvent = () => {
@@ -518,6 +521,7 @@ export const UminekoInferenceFields = ({
                     onChange={(event) => setBonusDraft((prev) => ({ ...prev, trigger: event.target.value }))}
                     className={selectClass}
                   >
+                    <option value="">選択してください</option>
                     {UMINEKO2_BONUS_TRIGGER_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
                 </LabeledField>
@@ -529,11 +533,12 @@ export const UminekoInferenceFields = ({
                       setBonusDraft((prev) => ({
                         ...prev,
                         bonusType: nextType,
-                        bonusColor: getBonusColorOptions(nextType)[0]
+                        bonusColor: ''
                       }));
                     }}
                     className={selectClass}
                   >
+                    <option value="">選択してください</option>
                     {UMINEKO2_BONUS_TYPE_OPTIONS.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
                 </LabeledField>
@@ -542,11 +547,18 @@ export const UminekoInferenceFields = ({
                     value={bonusDraft.bonusColor}
                     onChange={(event) => setBonusDraft((prev) => ({ ...prev, bonusColor: event.target.value }))}
                     className={selectClass}
+                    disabled={!bonusDraft.bonusType}
                   >
+                    <option value="">選択してください</option>
                     {getBonusColorOptions(bonusDraft.bonusType).map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
                 </LabeledField>
-                <button type="button" onClick={addSpecialBonus} className="min-h-11 w-full rounded-xl bg-indigo-600 px-4 text-sm font-black text-white">
+                <button
+                  type="button"
+                  onClick={addSpecialBonus}
+                  disabled={!bonusDraft.trigger || !bonusDraft.bonusType || !bonusDraft.bonusColor}
+                  className="min-h-11 w-full rounded-xl bg-indigo-600 px-4 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
                   このボーナスを1件追加
                 </button>
               </div>

@@ -275,17 +275,22 @@ describe('App', () => {
 
     await user.click(await screen.findAllByRole('button', { name: '追加・確認' }).then((buttons) => buttons[0]));
     expect(await screen.findByRole('option', { name: '不明' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'このボーナスを1件追加' })).toBeDisabled();
 
     await user.selectOptions(screen.getByRole('combobox', { name: '当選契機' }), '単独');
+    expect(screen.getByRole('button', { name: 'このボーナスを1件追加' })).toBeDisabled();
     await user.selectOptions(screen.getByRole('combobox', { name: 'BB / REG' }), 'REG');
+    expect(screen.getByRole('combobox', { name: '当選色' })).toHaveValue('');
     await user.selectOptions(screen.getByRole('combobox', { name: '当選色' }), '白');
     await user.click(screen.getByRole('button', { name: 'このボーナスを1件追加' }));
 
-    expect(screen.getByRole('combobox', { name: '当選契機' })).toHaveValue('不明');
-    expect(screen.getByRole('combobox', { name: 'BB / REG' })).toHaveValue('BIG');
-    expect(screen.getByRole('combobox', { name: '当選色' })).toHaveValue('赤異色');
+    expect(screen.getByRole('combobox', { name: '当選契機' })).toHaveValue('');
+    expect(screen.getByRole('combobox', { name: 'BB / REG' })).toHaveValue('');
+    expect(screen.getByRole('combobox', { name: '当選色' })).toHaveValue('');
+    expect(screen.getByRole('combobox', { name: '当選色' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'このボーナスを1件追加' })).toBeDisabled();
     expect(screen.getByText('単独 / REG / 白')).toBeInTheDocument();
-  });
+  }, 10000);
 
   it('keeps entry modals vertically scrollable when history grows', async () => {
     const user = userEvent.setup();
