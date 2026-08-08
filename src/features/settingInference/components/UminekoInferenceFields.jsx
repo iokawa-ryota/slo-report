@@ -15,8 +15,9 @@ import {
 
 const selectClass = 'h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold outline-none focus:border-indigo-500';
 const listCardClass = 'rounded-2xl border border-slate-200 bg-slate-50 p-4';
-const compactGridClass = 'grid grid-cols-2 gap-2 min-[420px]:grid-cols-3';
-const twoColumnCompactGridClass = 'grid grid-cols-1 gap-2 min-[360px]:grid-cols-2';
+const compactGridClass = 'grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 min-[520px]:grid-cols-3';
+const twoColumnCompactGridClass = 'grid grid-cols-1 gap-3 min-[460px]:grid-cols-2';
+const summaryGridClass = 'grid grid-cols-1 gap-3 min-[520px]:grid-cols-2';
 
 const Accordion = ({ title, subtitle, children, defaultOpen = false, testId }) => (
   <details className="rounded-3xl border border-slate-200 bg-white shadow-sm" open={defaultOpen} data-testid={testId}>
@@ -122,16 +123,16 @@ const EntryModal = ({ title, subtitle, countLabel, onClose, children }) => (
 
 const SummaryActionCard = ({ title, description, countLabel, primaryLabel, onOpen }) => (
   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-    <div className="flex items-start justify-between gap-3">
+    <div className="space-y-3">
       <div>
         <div className="text-sm font-black text-slate-800">{title}</div>
-        <p className="mt-1 text-xs text-slate-500">{description}</p>
-        <p className="mt-2 text-xs font-black text-indigo-600">{countLabel}</p>
+        <p className="mt-1 text-sm leading-6 text-slate-500">{description}</p>
+        <p className="mt-3 text-sm font-black text-indigo-600">{countLabel}</p>
       </div>
       <button
         type="button"
         onClick={onOpen}
-        className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
+        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-700"
       >
         <ExternalLink size={16} />
         {primaryLabel}
@@ -322,18 +323,18 @@ export const UminekoInferenceFields = ({
       >
         <div className="space-y-4">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
+            <div className="flex flex-col gap-3 min-[460px]:flex-row min-[460px]:items-start min-[460px]:justify-between">
+              <div className="min-w-0">
                 <div className="text-sm font-black text-slate-800">ARTレベル回数</div>
-                <p className="mt-1 text-xs text-slate-500">Lv1=30G / Lv2=50G / Lv3=90G を自動合算します。</p>
+                <p className="mt-1 text-sm leading-6 text-slate-500">Lv1=30G / Lv2=50G / Lv3=90G を自動合算します。</p>
               </div>
-              <div className="rounded-2xl bg-white px-3 py-2 text-right">
+              <div className="self-start rounded-2xl bg-white px-4 py-3 text-right shadow-sm">
                 <div className="text-[11px] font-black uppercase text-slate-400">ART合計</div>
                 <div className="text-lg font-black text-slate-800">{derivedArtGames.toLocaleString()}G</div>
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-3 gap-2">
+            <div className="mt-3 grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 min-[520px]:grid-cols-3">
               <StepperField
                 label="Lv1"
                 name="artLevel1Count"
@@ -367,7 +368,7 @@ export const UminekoInferenceFields = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2">
             <StepperField
               label="ART中共通ベル回数"
               name="artCommonBellCount"
@@ -400,7 +401,7 @@ export const UminekoInferenceFields = ({
         <div className="space-y-4">
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="text-sm font-black text-slate-800">特殊条件</div>
-            <p className="mt-1 text-xs text-slate-500">1枚役A/B/C と確定役Aをまとめて記録します。推測反映は今後拡張します。</p>
+            <p className="mt-1 text-sm leading-6 text-slate-500">1枚役A/B/C と確定役Aをまとめて記録します。推測反映は今後拡張します。</p>
             <div className={`mt-3 ${twoColumnCompactGridClass}`}>
               <StepperField
                 label="1枚役A"
@@ -447,7 +448,7 @@ export const UminekoInferenceFields = ({
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div className="text-sm font-black text-slate-800">ステージチェンジ時のロゴ発光</div>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-sm leading-6 text-slate-500">
               発光なしはサンプルから除外し、ロゴ発光「小 / 大」の内訳だけ記録します。小と大の合計から割合を見ます。
             </p>
             <div className={`mt-3 ${twoColumnCompactGridClass}`}>
@@ -474,7 +475,7 @@ export const UminekoInferenceFields = ({
             </div>
           </div>
 
-          <div className={twoColumnCompactGridClass}>
+          <div className={summaryGridClass}>
             <SummaryActionCard
               title="真実ポイント"
               description="周期天井到達時の真実ポイントを1件ずつ記録します。"
