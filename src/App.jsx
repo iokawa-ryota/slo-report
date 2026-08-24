@@ -409,6 +409,7 @@ const App = () => {
       } else {
         // 新規作成モード - Firebase に追加
         savedRecordId = await createRecord(recordData);
+        setActiveTab('dashboard');
       }
 
       if (shouldPersistUminekoInference && savedRecordId && uminekoInference.errors.length === 0 && uminekoInference.result && canSyncSettingInference()) {

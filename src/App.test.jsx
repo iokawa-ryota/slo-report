@@ -156,6 +156,19 @@ describe('App', () => {
     expect(screen.getAllByText('直近5件の履歴').length).toBeGreaterThan(0);
   });
 
+  it('returns to the dashboard after saving a new record instead of leaving only the date filter', async () => {
+    const user = userEvent.setup();
+    createRecordMock.mockResolvedValue('new-record');
+    render(<App />);
+
+    await user.click(screen.getAllByRole('button', { name: 'データ入力' })[0]);
+    await user.click(screen.getByRole('button', { name: '記録を保存する' }));
+
+    expect(createRecordMock).toHaveBeenCalled();
+    expect((await screen.findAllByText('全機種 累計収支')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('直近5件の履歴').length).toBeGreaterThan(0);
+  });
+
   it('keeps unsaved edit content when closing the edit form with x', async () => {
     const user = userEvent.setup();
     render(<App />);

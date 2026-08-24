@@ -33,6 +33,7 @@ async function addRecord(page, record) {
   await page.locator('textarea[name="memo"]').fill(record.memo);
   await page.getByRole('button', { name: '記録を保存する' }).click();
   await page.waitForTimeout(500);
+  await expectVisible(page.getByText('全機種 累計収支').first(), '新規保存後にダッシュボードへ戻りませんでした');
 }
 
 async function run() {
@@ -104,15 +105,18 @@ async function run() {
     await expectVisible(page.getByText('うみねこのなく頃に2'), '設定推測画面へ遷移できませんでした');
     await expectNoHorizontalOverflow(page, 'body', '設定推測画面の320px表示で横スクロールが発生しています');
 
+    await page.getByTestId('bonus-accordion').locator(':scope > summary').click();
+    await page.getByTestId('art-accordion').locator(':scope > summary').click();
+
     await page.getByRole('textbox', { name: '総ゲーム数' }).fill('3200');
     await page.getByRole('textbox', { name: 'BIG回数' }).fill('10');
     await page.getByRole('textbox', { name: 'REG回数' }).fill('11');
-    await page.locator('input[name="artGames"]').fill('600');
+    await page.getByRole('textbox', { name: 'Lv1' }).fill('20');
     await page.locator('input[name="artCommonBellCount"]').fill('28');
     await page.locator('input[name="artMissCount"]').fill('10');
 
     const inferenceDraft = await page.evaluate(() => JSON.parse(localStorage.getItem('setting-inference-draft-v1:umineko2') || '{}'));
-    if (inferenceDraft.input?.totalGames !== '3200' || inferenceDraft.input?.artGames !== '600') {
+    if (inferenceDraft.input?.totalGames !== '3200' || inferenceDraft.input?.artLevel1Count !== '20') {
       throw new Error('設定推測ドラフトがlocalStorageへ保存されていません');
     }
 
@@ -121,10 +125,13 @@ async function run() {
     await page.locator('header button').first().click();
     await page.getByRole('button', { name: '設定推測' }).click();
 
+    await page.getByTestId('bonus-accordion').locator(':scope > summary').click();
+    await page.getByTestId('art-accordion').locator(':scope > summary').click();
+
     const restoredTotalGames = await page.getByRole('textbox', { name: '総ゲーム数' }).inputValue();
-    const restoredArtGames = await page.getByRole('textbox', { name: 'ARTゲーム数' }).inputValue();
-    if (restoredTotalGames !== '3200' || restoredArtGames !== '600') {
-      throw new Error(`設定推測ドラフトが復元されていません: total=${restoredTotalGames}, art=${restoredArtGames}`);
+    const restoredArtLevel1Count = await page.getByRole('textbox', { name: 'Lv1' }).inputValue();
+    if (restoredTotalGames !== '3200' || restoredArtLevel1Count !== '20') {
+      throw new Error(`設定推測ドラフトが復元されていません: total=${restoredTotalGames}, lv1=${restoredArtLevel1Count}`);
     }
 
     await expectVisible(page.getByText('最有力設定'), '設定推測結果が表示されていません');
